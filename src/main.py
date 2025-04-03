@@ -48,142 +48,129 @@ DATASET_CONFIGS = {
                               module_type="multi-hop", scoring_function="score_mh"),
 }
 
+def format_question_from_keys(item: Dict[str, Any], keys: List[str]) -> str:
+    # When question_key is a list, concatenate values from multiple keys into a single question
+    parts = []
+    for key in keys:
+        if key in item:
+            parts.append(f"{key}: {item[key]}")
+    return "\n".join(parts)
 
-class ExperimentRunner:
-    def __init__(self, dataset: str, model: str, start: int = 0, end: int = -1, mode: str = "atom"):
-        # Initialize experiment runner
-        self.dataset = dataset
-        self.start = start
-        self.end = None if end == -1 else end
-        self.interval = "full" if self.end is None else f"{start}-{end}"
-        self.timestamp = time.time()
-        self.mode = mode
-        # Validate dataset support
-        if dataset not in DATASET_CONFIGS:
-            raise ValueError(f"Unsupported dataset: {dataset}")
-            
-        self.config = DATASET_CONFIGS[dataset]
-        set_model(model)
+async def gather_results(config: DatasetConfig, dataset: str, testset: List[Dict[str, Any]]) -> List[Any]:
+    # Collect experiment results
+    set_module(config.module_type)
+    # some modules
     
-    async def gather_results(self, testset: List[Dict[str, Any]]) -> List[Any]:
-        # Collect experiment results
-        set_module(self.config.module_type)
-        # some modules
-        
-        # some question key
-        question_key = self.config.question_key
-        # list of tasks
-        tasks = []
-        
-        if self.config.requires_context():
-            from experiment.prompter.multihop import contexts
-            # Handle case where question_key is a list
-            if isinstance(question_key, list):
-                formatted_questions = [self._format_question_from_keys(item, question_key) for item in testset]
-                # tasks from atom
-                tasks = [atom(question, contexts(item, self.dataset)) 
-                         for question, item in zip(formatted_questions, testset)]
-            else:
-                tasks = [atom(item[question_key], contexts(item, self.dataset)) for item in testset]
-        else:
-            # Handle case where question_key is a list
-            if isinstance(question_key, list):
-                tasks = [atom(self._format_question_from_keys(item, question_key)) for item in testset]
-            else:
-                tasks = [atom(item[question_key]) for item in testset]
-
-        return await tqdm.gather(*tasks, desc=f"Processing {self.dataset} tasks")
+    # some question key
+    question_key = config.question_key
+    # list of tasks
+    tasks = []
     
-    def _format_question_from_keys(self, item: Dict[str, Any], keys: List[str]) -> str:
-        # When question_key is a list, concatenate values from multiple keys into a single question
-        parts = []
-        for key in keys:
-            if key in item:
-                parts.append(f"{key}: {item[key]}")
-        return "\n".join(parts)
-    
-    def construct_entry(self, result: Tuple[Dict[str, Any], Any], data: Dict[str, Any]) -> Dict[str, Any]:
-        # Construct result entry
-        result_data, log = result
-        question_key = self.config.question_key
-        answer_key = self.config.answer_key
-        
+    if config.requires_context():
+        from experiment.prompter.multihop import contexts
         # Handle case where question_key is a list
         if isinstance(question_key, list):
-            question = self._format_question_from_keys(data, question_key)
+            formatted_questions = [format_question_from_keys(item, question_key) for item in testset]
+            # tasks from atom
+            tasks = [atom(question, contexts(item, dataset)) 
+                     for question, item in zip(formatted_questions, testset)]
         else:
-            question = data[question_key]
+            tasks = [atom(item[question_key], contexts(item, dataset)) for item in testset]
+    else:
+        # Handle case where question_key is a list
+        if isinstance(question_key, list):
+            tasks = [atom(format_question_from_keys(item, question_key)) for item in testset]
+        else:
+            tasks = [atom(item[question_key]) for item in testset]
+
+    return await tqdm.gather(*tasks, desc=f"Processing {dataset} tasks")
+
+def construct_entry(config: DatasetConfig, dataset: str, result: Tuple[Dict[str, Any], Any], data: Dict[str, Any]) -> Dict[str, Any]:
+    # Construct result entry
+    result_data, log = result
+    question_key = config.question_key
+    answer_key = config.answer_key
+        
+    # Handle case where question_key is a list
+    if isinstance(question_key, list):
+        question = format_question_from_keys(data, question_key)
+    else:
+        question = data[question_key]
             
-        groundtruth = data[answer_key]
+    groundtruth = data[answer_key]
         
-        entry = {
-            "problem": question,
-            "groundtruth": groundtruth,
-            "response": result_data.get("response"),
-            "answer": result_data.get("answer"),
-            "log": log
-        }
+    entry = {
+        "problem": question,
+        "groundtruth": groundtruth,
+        "response": result_data.get("response"),
+        "answer": result_data.get("answer"),
+        "log": log
+    }
         
-        # Dynamically import scoring function
-        scoring_function = getattr(__import__(f"experiment.utils", fromlist=[self.config.scoring_function]), 
-                                  self.config.scoring_function)
+    # Dynamically import scoring function
+    scoring_function = getattr(__import__(f"experiment.utils", fromlist=[config.scoring_function]), 
+                                config.scoring_function)
         
         # Pass different parameters based on scoring function
-        if self.config.scoring_function == "score_math":
-            entry["score"] = scoring_function(entry["answer"], groundtruth, self.dataset)
-        else:
-            entry["score"] = scoring_function(entry["answer"], groundtruth)
-        return entry
+    if config.scoring_function == "score_math":
+        entry["score"] = scoring_function(entry["answer"], groundtruth, dataset)
+    else:
+        entry["score"] = scoring_function(entry["answer"], groundtruth)
+    return entry
+
+def update_score_log(start: int, end: int, dataset: str, interval: str, accuracy: float) -> None:
+    # Update score log
+    log_entry = {
+        "start": start,
+        "end": end,
+        "token": {"prompt": get_token()[0], "completion": get_token()[1]},
+        "call_count": get_call_count(),
+        "accuracy": accuracy,
+    }
     
-    def update_score_log(self, accuracy: float) -> None:
-        # Update score log
-        log_entry = {
-            "start": self.start,
-            "end": self.end,
-            "token": {"prompt": get_token()[0], "completion": get_token()[1]},
-            "call_count": get_call_count(),
-            "accuracy": accuracy,
-        }
+    score_log_file = LOG_DIR.format(dataset=dataset, size=interval) + "/score.json"
+    existing_log = load_json(score_log_file) if os.path.exists(score_log_file) else {}
+    count = get_file_count(LOG_DIR, interval, dataset, exclude_score=True)
+
+    if dataset not in existing_log:
+        existing_log[dataset] = {}
+    existing_log[dataset][str(count)] = log_entry
+    save_json(score_log_file, existing_log)
+
+async def run(dataset: str, model: str, start: int = 0, end: int = -1):
+    print(f"Running experiment on {dataset} dataset from index {start} to {end}")
+
+    interval = "full" if end is None else f"{start}-{end}"
+    timestamp = time.time()
+
+    if dataset not in DATASET_CONFIGS:
+        raise ValueError(f"Unsupported dataset: {dataset}")
+            
+    config = DATASET_CONFIGS[dataset]
+    set_model(model)
+
+    testset = load_data(dataset, "test")[start:end]
+    results = await gather_results(config, dataset, testset)
+
+    json_obj = [construct_entry(result, data) for result, data in zip(results, testset)]
+    accuracy = sum(entry["score"] for entry in json_obj) / len(json_obj)
+
+    # Save results
+    log_file = get_next_log_file(LOG_DIR, interval, dataset)
+    save_json(log_file, json_obj)
+
+    # Update score log
+    update_score_log(accuracy)
+
+    # Print result summary
+    print(f"Unsolved: {round((1-accuracy) * len(json_obj))}")
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"Time taken: {duration_formatter(time.time() - timestamp)}")
         
-        score_log_file = LOG_DIR.format(dataset=self.dataset, size=self.interval) + "/score.json"
-        existing_log = load_json(score_log_file) if os.path.exists(score_log_file) else {}
-        count = get_file_count(LOG_DIR, self.interval, self.dataset, exclude_score=True)
-
-        if self.dataset not in existing_log:
-            existing_log[self.dataset] = {}
-        existing_log[self.dataset][str(count)] = log_entry
-        save_json(score_log_file, existing_log)
-    
-    async def run(self) -> float:
-        # Run experiment and return accuracy
-        print(f"Running {self.mode} experiment on {self.dataset} dataset from index {self.start} to {self.end}")
-        
-        # Load test set
-        testset = load_data(self.dataset, "test")[self.start:self.end]
-        results = await self.gather_results(testset)
-
-        # Build results
-        json_obj = [self.construct_entry(result, data) for result, data in zip(results, testset)]
-        accuracy = sum(entry["score"] for entry in json_obj) / len(json_obj)
-
-        # Save results
-        log_file = get_next_log_file(LOG_DIR, self.interval, self.dataset)
-        save_json(log_file, json_obj)
-        
-        # Update score log
-        self.update_score_log(accuracy)
-
-        # Print result summary
-        print(f"Unsolved: {round((1-accuracy) * len(json_obj))}")
-        print(f"Accuracy: {accuracy:.4f}")
-        print(f"Time taken: {duration_formatter(time.time() - self.timestamp)}")
-        
-        return accuracy
-
+    return accuracy
 
 async def main():
     # Main function
-    # parse arguments
     parser = argparse.ArgumentParser(description='Run experiments on various datasets')
     parser.add_argument('--dataset', type=str, default='mmlu', 
                         choices=list(DATASET_CONFIGS.keys()),
@@ -194,23 +181,11 @@ async def main():
                         help='End index of the dataset (-1 for all)')
     parser.add_argument('--model', type=str, default='gpt-4o-mini',
                         help='Model to use for the experiment')
-    parser.add_argument('--mode', type=str, choices=['atom', 'plugin'], default='atom',
-                        help='Mode: atom (standard experiment) or plugin (generate contracted dataset)')
     
     args = parser.parse_args()
     
-    if args.mode == 'atom':
-        # Run standard experiment
-        runner = ExperimentRunner(
-            dataset=args.dataset,
-            model=args.model,
-            start=args.start,
-            end=args.end,
-            mode=args.mode
-        )
-        await runner.run()
-    else:
-        raise ValueError(f"Invalid mode: {args.mode}")
+    # Run experiment
+    await run(args.dataset, args.model, args.start, args.end)
 
 if __name__ == "__main__":
     asyncio.run(main())
