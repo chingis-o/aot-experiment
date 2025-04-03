@@ -7,7 +7,7 @@ from typing import Dict, List, Any, Tuple
 from tqdm.asyncio import tqdm
 
 from experiment.dataset import load_data
-from experiment.module import set_module, atom, plugin
+from experiment.module import set_module, atom
 from experiment.utils import (
     duration_formatter,
     load_json,
@@ -181,57 +181,6 @@ class ExperimentRunner:
         return accuracy
 
 
-async def optimize_dataset(dataset: str, model: str, start: int = 0, end: int = -1):
-    # Optimize dataset questions and save to new file
-    print(f"Optimizing {dataset} dataset questions from index {start} to {end}")
-    timestamp = time.time()
-    
-    # Set model and module
-    set_model(model)
-    config = DATASET_CONFIGS[dataset]
-    set_module(config.module_type)
-    
-    # Load test set
-    testset = load_data(dataset, "test")[start:None if end == -1 else end]
-    question_key = config.question_key
-    if isinstance(question_key, list):
-        question_key = question_key[0]
-    
-    # Create tasks
-    async def process_item(item):
-        try:
-            if config.requires_context():
-                from experiment.prompter.multihop import contexts
-                optimized_question = await plugin(item[question_key], contexts(item, dataset))
-            else:
-                optimized_question = await plugin(item[question_key])
-                
-            # Create new entry
-            new_item = item.copy()
-            new_item["original_question"] = item[question_key]
-            new_item[question_key] = optimized_question
-            return new_item
-        except Exception as e:
-            print(f"Error processing item: {e}")
-            return item  # Return original item on error
-    
-    # Process all items in parallel
-    tasks = [process_item(item) for item in testset]
-    optimized_data = await tqdm.gather(*tasks, desc=f"Optimizing {dataset} questions")
-    
-    # Ensure output directory exists
-    os.makedirs(f"experiment/data/{dataset}", exist_ok=True)
-    
-    # Save optimized dataset
-    output_path = f"experiment/data/{dataset}/contracted.json"
-    save_json(output_path, optimized_data)
-    
-    elapsed_time = time.time() - timestamp
-    print(f"Optimized dataset saved to {output_path}")
-    print(f"Time taken: {duration_formatter(elapsed_time)}")
-    
-    return optimized_data
-
 async def main():
     # Main function
     # parse arguments
@@ -250,15 +199,7 @@ async def main():
     
     args = parser.parse_args()
     
-    if args.mode == 'plugin':
-        # Run plugin mode
-        await optimize_dataset(
-            dataset=args.dataset,
-            model=args.model,
-            start=args.start,
-            end=args.end
-        )
-    elif args.mode == 'atom':
+    if args.mode == 'atom':
         # Run standard experiment
         runner = ExperimentRunner(
             dataset=args.dataset,

@@ -122,7 +122,7 @@ def ensemble(question: str, solutions: list):
     return prompt
 
 # utilization
-def check(name: str, result, *args):
+def check(name: str, result):
     def is_number(x):
         try:
             float(x)

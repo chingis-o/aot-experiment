@@ -4,7 +4,7 @@ import json
 import re
 import string
 from collections import Counter
-from typing import List, Union
+from typing import Union
 
 def extract_json(string):
     try:

@@ -10,7 +10,6 @@ from experiment.utils import (
 from llm import gen
 from experiment.prompter import math, multichoice, multihop
 from contextlib import contextmanager
-import asyncio
 
 count = 0
 MAX_RETRIES = 5
@@ -224,77 +223,6 @@ async def atom(question: str, contexts: str=None, direct_result=None, decompose_
         }, log
 
     return result, log
-
-async def plugin(question: str, contexts: str=None, sample_num: int=3):
-    # Create tasks for parallel execution
-    async def process_sample():
-        # Get decompose result
-        decompose_args = {"contexts": contexts} if module == "multi-hop" else {}
-        decompose_result = await decompose(question, **decompose_args)
-        
-        # Separate independent and dependent sub-questions
-        independent_subqs = [sub_q for sub_q in decompose_result["sub-questions"] if len(sub_q["depend"]) == 0]
-        dependent_subqs = [sub_q for sub_q in decompose_result["sub-questions"] if sub_q not in independent_subqs]
-        
-        # Get contraction result
-        merging_args = {
-            "question": question,
-            "decompose_result": decompose_result,
-            "independent_subqs": independent_subqs,
-            "dependent_subqs": dependent_subqs
-        }
-        if module == "multi-hop":
-            merging_args["contexts"] = contexts
-            
-        contractd_thought, contractd_question, contraction_result = await merging(**merging_args)
-        
-        return {
-            "decompose_result": decompose_result,
-            "contractd_thought": contractd_thought,
-            "contractd_question": contractd_question,
-            "contraction_result": contraction_result
-        }
-    
-    # Execute all samples in parallel
-    tasks = [process_sample() for _ in range(sample_num)]
-    all_results = await asyncio.gather(*tasks)
-    
-    # Get direct result for original question
-    direct_args = (question, contexts) if module == "multi-hop" else (question,)
-    direct_result = await direct(*direct_args)
-    
-    # Get ensemble result from all contracted results plus direct result
-    all_responses = [direct_result["response"]] + [r["contraction_result"]["response"] for r in all_results]
-    ensemble_args = [question, all_responses]
-    if module == "multi-hop":
-        ensemble_args.append(contexts)
-    
-    # ensemble
-    ensemble_result = await ensemble(*ensemble_args)
-    ensemble_answer = ensemble_result.get("answer", "")
-    
-    # Calculate scores for each contracted result
-    scores = []
-    token_counts = []
-    
-    for result in all_results:
-        contraction_result = result["contraction_result"]
-        # Calculate score compared to ensemble answer
-        scores.append(score(contraction_result["answer"], ensemble_answer))
-        
-        # Estimate token count for the response
-        token_counts.append(len(contraction_result.get("response", "").split()))
-    
-    # Find the best result(s) - those with the highest score
-    max_score = max(scores)
-    best_indices = [i for i, s in enumerate(scores) if s == max_score]
-    
-    # Among the best results, find the one with the lowest token count
-    best_index = min(best_indices, key=lambda i: token_counts[i])
-    
-    # Return the best result
-    best_result = all_results[best_index]
-    return best_result["contractd_question"]
 
 # direct answer
 @retry("direct")
