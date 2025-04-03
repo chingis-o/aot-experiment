@@ -17,7 +17,7 @@ from experiment.utils import (
 )
 from llm import get_token, get_call_count, set_model
 
-# Configuration constants
+# Configuration constants log directory
 LOG_DIR = "log/{dataset}/{size}"
 
 # Dataset configuration
@@ -30,6 +30,7 @@ class DatasetConfig:
     
     def requires_context(self) -> bool:
         return self.module_type == "multi-hop"
+# some bullshit
 
 # Dataset configuration mapping
 DATASET_CONFIGS = {
@@ -67,8 +68,11 @@ class ExperimentRunner:
     async def gather_results(self, testset: List[Dict[str, Any]]) -> List[Any]:
         # Collect experiment results
         set_module(self.config.module_type)
+        # some modules
         
+        # some question key
         question_key = self.config.question_key
+        # list of tasks
         tasks = []
         
         if self.config.requires_context():
@@ -76,6 +80,7 @@ class ExperimentRunner:
             # Handle case where question_key is a list
             if isinstance(question_key, list):
                 formatted_questions = [self._format_question_from_keys(item, question_key) for item in testset]
+                # tasks from atom
                 tasks = [atom(question, contexts(item, self.dataset)) 
                          for question, item in zip(formatted_questions, testset)]
             else:
@@ -229,6 +234,7 @@ async def optimize_dataset(dataset: str, model: str, start: int = 0, end: int = 
 
 async def main():
     # Main function
+    # parse arguments
     parser = argparse.ArgumentParser(description='Run experiments on various datasets')
     parser.add_argument('--dataset', type=str, default='mmlu', 
                         choices=list(DATASET_CONFIGS.keys()),

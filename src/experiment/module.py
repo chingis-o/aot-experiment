@@ -19,6 +19,8 @@ ATOM_DEPTH = 3
 score = None
 
 module = None
+
+#prompter
 prompter = None
 def set_module(module_name):  # math, multi-choice, multi-hop
     global module, prompter, score
@@ -77,6 +79,7 @@ async def decompose(question: str, **kwargs):
         contexts = kwargs["contexts"]
         multistep_result = await multistep(question, contexts)
         while retries > 0:
+            # label
             label_result = await label(question, multistep_result)
             try:
                 if len(label_result["sub-questions"]) != len(multistep_result["sub-questions"]):
@@ -93,6 +96,7 @@ async def decompose(question: str, **kwargs):
     else:
         multistep_result = await multistep(question)
         while retries > 0:
+            # label
             result = await label(question, multistep_result["response"], multistep_result["answer"])
             try:
                 calculate_depth(result["sub-questions"])
@@ -109,6 +113,8 @@ async def merging(question: str, decompose_result: dict, independent_subqs: list
         if module == "multi-hop"
         else (question, decompose_result, independent_subqs, dependent_subqs)
     )
+
+    # contract
     contractd_result = await contract(*contract_args)
     
     # Extract thought process and optimized question
@@ -138,6 +144,7 @@ async def atom(question: str, contexts: str=None, direct_result=None, decompose_
     direct_result = direct_result if direct_result else await direct(*direct_args)
     
     decompose_args = {"contexts": contexts} if module == "multi-hop" else {}
+    # decompose
     decompose_result = decompose_result if decompose_result else await decompose(question, **decompose_args)
     
     # Set recursion depth
@@ -156,7 +163,8 @@ async def atom(question: str, contexts: str=None, direct_result=None, decompose_
     }
     if module == "multi-hop":
         merging_args["contexts"] = contexts
-        
+
+    # merging
     contractd_thought, contractd_question, contraction_result = await merging(**merging_args)
     
     # Update contraction result with additional information
@@ -174,6 +182,7 @@ async def atom(question: str, contexts: str=None, direct_result=None, decompose_
     if module == "multi-hop":
         ensemble_args.append(contexts)
     
+    # ensemble
     ensemble_result = await ensemble(*ensemble_args)
     ensemble_answer = ensemble_result.get("answer", "")
     
@@ -213,6 +222,7 @@ async def atom(question: str, contexts: str=None, direct_result=None, decompose_
             "response": result.get("response"),
             "answer": result.get("answer"),
         }, log
+
     return result, log
 
 async def plugin(question: str, contexts: str=None, sample_num: int=3):
@@ -259,6 +269,7 @@ async def plugin(question: str, contexts: str=None, sample_num: int=3):
     if module == "multi-hop":
         ensemble_args.append(contexts)
     
+    # ensemble
     ensemble_result = await ensemble(*ensemble_args)
     ensemble_answer = ensemble_result.get("answer", "")
     
@@ -285,24 +296,29 @@ async def plugin(question: str, contexts: str=None, sample_num: int=3):
     best_result = all_results[best_index]
     return best_result["contractd_question"]
 
+# direct answer
 @retry("direct")
 async def direct(question: str, contexts: str=None):
     if isinstance(question, (list, tuple)):
         question = ''.join(map(str, question))
     pass
 
+# multistep?
 @retry("multistep")
 async def multistep(question: str, contexts: str=None):
     pass
 
+# label?
 @retry("label")
 async def label(question: str, sub_questions: str, answer: str=None):
     pass
+
 
 @retry("contract")
 async def contract(question: str, sub_result: dict, independent_subqs: list, dependent_subqs: list, contexts: str=None):
     pass
 
+# 
 @retry("ensemble")
 async def ensemble(question: str, results: list, contexts: str=None):
     pass
