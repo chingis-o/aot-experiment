@@ -1,7 +1,6 @@
 from functools import wraps
 from experiment.utils import (
     extract_json,
-    extract_xml,
     calculate_depth,
     score_math,
     score_mc,
@@ -9,7 +8,6 @@ from experiment.utils import (
 )
 from llm import generate
 from experiment.prompter import math, multichoice, multihop
-from contextlib import contextmanager
 
 count = 0
 MAX_RETRIES = 5
@@ -21,7 +19,6 @@ module = None
 
 # prompter
 prompter = None
-
 
 def set_module(module_name):  # math, multi-choice, multi-hop
     global module, prompter, score
@@ -36,101 +33,57 @@ def set_module(module_name):  # math, multi-choice, multi-hop
         prompter = multihop
         score = score_mh
 
-
-def retry(func_name):
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            global MAX_RETRIES
-            retries = MAX_RETRIES
-            while retries >= 0:
-                prompt = getattr(prompter, func_name)(*args, **kwargs)
-
-                if module == "multi-hop" and func_name != "contract":
-                    response = await generate(prompt, response_format="json_object")
-                    result = extract_json(response)
-                    result["response"] = response
-                else:
-                    if func_name == "label":
-                        response = await generate(prompt, response_format="json_object")
-                        result = extract_json(response)
-                    else:
-                        response = await generate(prompt, response_format="text")
-                        result = extract_xml(response)
-                        if isinstance(result, dict):
-                            result["response"] = response
-
-                if prompter.check(func_name, result):
-                    return result
-                retries -= 1
-
-            global count
-            if MAX_RETRIES > 1:
-                count += 1
-            if count > 300:
-                raise Exception("Too many failures")
-            return result if isinstance(result, dict) else {}
-
-        return wrapper
-
-    return decorator
-
-async def execute(func_name, *args, **kwargs):
-    if isinstance(question, (list, tuple)) and func_name == 'direct':
+async def direct(question: str):
+    if isinstance(question, (list, tuple)):
         question = "".join(map(str, question))
+    return prompter.direct(question)
+
+async def multistep(question: str):
+    return prompter.multistep(question)
+
+async def label(question: str, sub_questions: str, answer: str = None):
+    return prompter.label(question, sub_questions, answer)
+
+async def contract(
+    question: str,
+    decompose_result: dict,
+    independent_subqs: list,
+    dependent_subqs: list,
+):
+    return prompter.contract(question, decompose_result, independent_subqs, dependent_subqs)
+
+
+async def ensemble(question: str, results: list):
+    return prompter.ensemble(question, results)
+
+
+async def label(func_name, prompt):
+    response = await generate(prompt, response_format="json_object")
+    result = extract_json(response)
     
-    global MAX_RETRIES
-    retries = MAX_RETRIES
+    if prompter.check(func_name, result):
+        return result
+    
+    return {}
 
-    # retries
-    while retries >= 0:
-        prompt = getattr(prompter, func_name)(*args, **kwargs)
-        if module == "multi-hop" and func_name != "contract":
-            response = await generate(prompt, response_format="json_object")
-            result = extract_json(response)
-            result["response"] = response
-        else:
-            if func_name == "label":
-                response = await generate(prompt, response_format="json_object")
-                result = extract_json(response)
-            else:
-                response = await generate(prompt, response_format="text")
-                result = extract_xml(response)
-                if isinstance(result, dict):
-                    result["response"] = response
-        if prompter.check(func_name, result):
-            return result
-        retries -= 1
-
-    # calculate count
-    global count
-    if MAX_RETRIES > 1:
-        count += 1
-    if count > 300:
-        raise Exception("Too many failures")
-    return result if isinstance(result, dict) else {}
-
-async def decompose(question: str, contexts):
+async def decompose(question: str):
     retries = LABEL_RETRIES
+    
     if module == "multi-hop":
-        if contexts == None:
-            raise Exception("Multi-hop must have contexts")
-        multistep_result = await multistep(question, contexts)
+        multistep_result = await multistep(question)
         subquestions = label_result["sub-questions"]
         multistep_subquestions = multistep_result["sub-questions"]
 
         while retries > 0:
             label_result = await label(question, multistep_result)
 
-            try:
-                if len(subquestions) != len(multistep_subquestions):
+            if len(subquestions) != len(multistep_subquestions):
                     retries -= 1
                     continue
-                calculate_depth(subquestions)
-                break
-            except:
-                retries -= 1
-                continue
+           
+            calculate_depth(subquestions)
+            retries -= 1
+        
         for step, note in zip(
             multistep_subquestions, subquestions
         ):
@@ -142,14 +95,10 @@ async def decompose(question: str, contexts):
 
         while retries > 0:
             result = await label(question, response, multistep_result["answer"])
+            calculate_depth(result["sub-questions"])
+            result["response"] = response
 
-            try:
-                calculate_depth(result["sub-questions"])
-                result["response"] = response
-                break
-            except:
-                retries -= 1
-                continue
+            retries -= 1
         return result
 
 
@@ -166,7 +115,7 @@ async def merging(question: str, decompose_result: dict, contexts: str = None):
     ]
 
     # contract
-    contractd_result = await contract(question, independent_subqs, dependent_subqs, contexts)
+    contractd_result = await contract(question, decompose_result, independent_subqs, dependent_subqs)
 
     # Extract thought process and optimized question
     contractd_question = contractd_result.get("question", "")
@@ -189,15 +138,10 @@ async def merging(question: str, decompose_result: dict, contexts: str = None):
     return contraction_result
 
 
-async def create_atom(question: str, contexts: str = None):
-    # call direct
-    direct_result = await direct(question, contexts)
-
-    # decompose
-    decompose_result = await decompose(question, contexts)
-
-    # contraction result
-    contraction_result = await merging(question, decompose_result, contexts)
+async def create_atom(question: str):
+    direct_result = await direct(question)
+    decompose_result = await decompose(question)
+    contraction_result = await merging(question, decompose_result)
 
     # Get ensemble result
     ensemble_args = [
@@ -205,7 +149,6 @@ async def create_atom(question: str, contexts: str = None):
         direct_result["response"],
         decompose_result["response"],
         contraction_result["response"],
-        contexts,
     ]
 
     # ensemble
@@ -249,50 +192,3 @@ async def create_atom(question: str, contexts: str = None):
 
     # Return appropriate result format
     return result, log
-
-
-# direct answer
-@retry("direct")
-async def direct(question: str, contexts: str = None):
-    if isinstance(question, (list, tuple)):
-        question = "".join(map(str, question))
-    pass
-
-
-# multistep?
-@retry("multistep")
-async def multistep(question: str, contexts: str = None):
-    pass
-
-
-# label?
-@retry("label")
-async def label(question: str, sub_questions: str, answer: str = None):
-    pass
-
-
-@retry("contract")
-async def contract(
-    question: str,
-    independent_subqs: list,
-    dependent_subqs: list,
-    contexts: str = None,
-):
-    pass
-
-
-#
-@retry("ensemble")
-async def ensemble(question: str, results: list, contexts: str = None):
-    pass
-
-
-@contextmanager
-def temporary_retries(value):
-    global MAX_RETRIES
-    original = MAX_RETRIES
-    MAX_RETRIES = value
-    try:
-        yield
-    finally:
-        MAX_RETRIES = original
