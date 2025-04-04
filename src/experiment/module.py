@@ -7,7 +7,7 @@ from experiment.utils import (
     score_mc,
     score_mh,
 )
-from llm import gen
+from llm import generate
 from experiment.prompter import math, multichoice, multihop
 from contextlib import contextmanager
 
@@ -19,8 +19,10 @@ score = None
 
 module = None
 
-#prompter
+# prompter
 prompter = None
+
+
 def set_module(module_name):  # math, multi-choice, multi-hop
     global module, prompter, score
     module = module_name
@@ -34,6 +36,7 @@ def set_module(module_name):  # math, multi-choice, multi-hop
         prompter = multihop
         score = score_mh
 
+
 def retry(func_name):
     def decorator(func):
         @wraps(func)
@@ -42,214 +45,247 @@ def retry(func_name):
             retries = MAX_RETRIES
             while retries >= 0:
                 prompt = getattr(prompter, func_name)(*args, **kwargs)
-                
+
                 if module == "multi-hop" and func_name != "contract":
-                    response = await gen(prompt, response_format="json_object")
+                    response = await generate(prompt, response_format="json_object")
                     result = extract_json(response)
                     result["response"] = response
                 else:
                     if func_name == "label":
-                        response = await gen(prompt, response_format="json_object")
+                        response = await generate(prompt, response_format="json_object")
                         result = extract_json(response)
                     else:
-                        response = await gen(prompt, response_format="text")
+                        response = await generate(prompt, response_format="text")
                         result = extract_xml(response)
                         if isinstance(result, dict):
                             result["response"] = response
-                
+
                 if prompter.check(func_name, result):
                     return result
                 retries -= 1
-            
+
             global count
             if MAX_RETRIES > 1:
                 count += 1
             if count > 300:
                 raise Exception("Too many failures")
             return result if isinstance(result, dict) else {}
+
         return wrapper
+
     return decorator
 
-async def decompose(question: str, **kwargs):
+async def execute(func_name, *args, **kwargs):
+    if isinstance(question, (list, tuple)) and func_name == 'direct':
+        question = "".join(map(str, question))
+    
+    global MAX_RETRIES
+    retries = MAX_RETRIES
+
+    # retries
+    while retries >= 0:
+        prompt = getattr(prompter, func_name)(*args, **kwargs)
+        if module == "multi-hop" and func_name != "contract":
+            response = await generate(prompt, response_format="json_object")
+            result = extract_json(response)
+            result["response"] = response
+        else:
+            if func_name == "label":
+                response = await generate(prompt, response_format="json_object")
+                result = extract_json(response)
+            else:
+                response = await generate(prompt, response_format="text")
+                result = extract_xml(response)
+                if isinstance(result, dict):
+                    result["response"] = response
+        if prompter.check(func_name, result):
+            return result
+        retries -= 1
+
+    # calculate count
+    global count
+    if MAX_RETRIES > 1:
+        count += 1
+    if count > 300:
+        raise Exception("Too many failures")
+    return result if isinstance(result, dict) else {}
+
+async def decompose(question: str, contexts):
     retries = LABEL_RETRIES
     if module == "multi-hop":
-        if "contexts" not in kwargs:
+        if contexts == None:
             raise Exception("Multi-hop must have contexts")
-        contexts = kwargs["contexts"]
         multistep_result = await multistep(question, contexts)
+        subquestions = label_result["sub-questions"]
+        multistep_subquestions = multistep_result["sub-questions"]
+
         while retries > 0:
-            # label
             label_result = await label(question, multistep_result)
+
             try:
-                if len(label_result["sub-questions"]) != len(multistep_result["sub-questions"]):
+                if len(subquestions) != len(multistep_subquestions):
                     retries -= 1
                     continue
-                calculate_depth(label_result["sub-questions"])
+                calculate_depth(subquestions)
                 break
             except:
                 retries -= 1
                 continue
-        for step, note in zip(multistep_result["sub-questions"], label_result["sub-questions"]):
+        for step, note in zip(
+            multistep_subquestions, subquestions
+        ):
             step["depend"] = note["depend"]
         return multistep_result
     else:
         multistep_result = await multistep(question)
+        response = multistep_result["response"]
+
         while retries > 0:
-            # label
-            result = await label(question, multistep_result["response"], multistep_result["answer"])
+            result = await label(question, response, multistep_result["answer"])
+
             try:
                 calculate_depth(result["sub-questions"])
-                result["response"] = multistep_result["response"]
+                result["response"] = response
                 break
             except:
                 retries -= 1
                 continue
         return result
 
-async def merging(question: str, decompose_result: dict, independent_subqs: list, dependent_subqs: list, **kwargs):
-    contract_args = (
-        (question, decompose_result, independent_subqs, dependent_subqs, kwargs["contexts"])
-        if module == "multi-hop"
-        else (question, decompose_result, independent_subqs, dependent_subqs)
-    )
+
+async def merging(question: str, decompose_result: dict, contexts: str = None):
+    independent_subqs = [
+        sub_q
+        for sub_q in decompose_result["sub-questions"]
+        if len(sub_q["depend"]) == 0
+    ]
+    dependent_subqs = [
+        sub_q
+        for sub_q in decompose_result["sub-questions"]
+        if sub_q not in independent_subqs
+    ]
 
     # contract
-    contractd_result = await contract(*contract_args)
-    
+    contractd_result = await contract(question, independent_subqs, dependent_subqs, contexts)
+
     # Extract thought process and optimized question
-    contractd_thought = contractd_result.get("response", "")
     contractd_question = contractd_result.get("question", "")
-    
+    contraction_thought = contractd_result.get("response", "")
+
     # Solve the optimized question
-    direct_args = (
-        (contractd_question, contractd_result.get("context", kwargs.get("contexts")))
-        if module == "multi-hop"
-        else (contractd_question,)
-    )
-    contraction_result = await direct(*direct_args)
-    
-    return contractd_thought, contractd_question, contraction_result
+    contraction_result = await direct(contractd_question, contexts)
 
-async def atom(question: str, contexts: str=None, direct_result=None, decompose_result=None, depth=None, log=None):
-    # Initialize logging
-    log = log if log else {}
-    index = len(log)
-    if depth == 0:
-        return None, log
-    log[index] = {}
-    
-    # Get results from different approaches
-    direct_args = (question, contexts) if module == "multi-hop" else (question,)
-    direct_result = direct_result if direct_result else await direct(*direct_args)
-    
-    decompose_args = {"contexts": contexts} if module == "multi-hop" else {}
-    # decompose
-    decompose_result = decompose_result if decompose_result else await decompose(question, **decompose_args)
-    
-    # Set recursion depth
-    depth = depth if depth else min(ATOM_DEPTH, calculate_depth(decompose_result["sub-questions"]))
-    
-    # Separate independent and dependent sub-questions
-    independent_subqs = [sub_q for sub_q in decompose_result["sub-questions"] if len(sub_q["depend"]) == 0]
-    dependent_subqs = [sub_q for sub_q in decompose_result["sub-questions"] if sub_q not in independent_subqs]
-    
-    # Get contraction result
-    merging_args = {
-        "question": question,
-        "decompose_result": decompose_result,
-        "independent_subqs": independent_subqs,
-        "dependent_subqs": dependent_subqs
-    }
-    if module == "multi-hop":
-        merging_args["contexts"] = contexts
-
-    # merging
-    contractd_thought, contractd_question, contraction_result = await merging(**merging_args)
-    
     # Update contraction result with additional information
-    contraction_result["contraction_thought"] = contractd_thought
-    contraction_result["sub-questions"] = independent_subqs + [{
-        "description": contractd_question,
-        "response": contraction_result.get("response", ""),
-        "answer": contraction_result.get("answer", ""),
-        "depend": []
-    }]
-    
+    contraction_result["contraction_thought"] = contraction_thought
+    contraction_result["sub-questions"] = independent_subqs + [
+        {
+            "description": contractd_question,
+            "response": contraction_thought,
+            "answer": contraction_result.get("answer", ""),
+            "depend": [],
+        }
+    ]
+
+    return contraction_result
+
+
+async def create_atom(question: str, contexts: str = None):
+    # call direct
+    direct_result = await direct(question, contexts)
+
+    # decompose
+    decompose_result = await decompose(question, contexts)
+
+    # contraction result
+    contraction_result = await merging(question, decompose_result, contexts)
+
     # Get ensemble result
-    ensemble_args = [question]
-    ensemble_args.append([direct_result["response"], decompose_result["response"], contraction_result["response"]])
-    if module == "multi-hop":
-        ensemble_args.append(contexts)
-    
+    ensemble_args = [
+        question,
+        direct_result["response"],
+        decompose_result["response"],
+        contraction_result["response"],
+        contexts,
+    ]
+
     # ensemble
     ensemble_result = await ensemble(*ensemble_args)
     ensemble_answer = ensemble_result.get("answer", "")
-    
+
     # Calculate scores
-    scores = []
-    if all(result["answer"] == ensemble_answer for result in [direct_result, decompose_result, contraction_result]):
-        scores = [1, 1, 1]
-    else:
-        for result in [direct_result, decompose_result, contraction_result]:
-            scores.append(score(result["answer"], ensemble_answer))
-    
-    # Update log with results
-    log[index].update({
-        "scores": scores,
-        "direct": direct_result,
-        "decompose": decompose_result,
-        "contract": contraction_result
-    })
-    
+    def is_all_answers_ensembled():
+        return all(
+            result["answer"] == ensemble_answer
+            for result in [direct_result, decompose_result, contraction_result]
+        )
+
+    def generate_scores():
+        if is_all_answers_ensembled():
+            return [1, 1, 1]
+        else:
+            results = [direct_result, decompose_result, contraction_result]
+            return [score(result["answer"], ensemble_answer) for result in results]
+
+    scores = generate_scores()
+
     # Select best method based on scores
     methods = {
         2: ("contract", contraction_result),
         0: ("direct", direct_result),
         1: ("decompose", decompose_result),
-        -1: ("ensemble", ensemble_result)
+        -1: ("ensemble", ensemble_result),
     }
-    
+
     max_score_index = scores.index(max(scores))
     method, result = methods.get(max_score_index, methods[-1])
-    
-    log[index]["method"] = method
-    
-    # Return appropriate result format
-    if index == 0:
-        return {
-            "method": method,
-            "response": result.get("response"),
-            "answer": result.get("answer"),
-        }, log
 
+    log = {
+        "scores": scores,
+        "direct": direct_result,
+        "decompose": decompose_result,
+        "contract": contraction_result,
+        "method": method,
+    }
+
+    # Return appropriate result format
     return result, log
+
 
 # direct answer
 @retry("direct")
-async def direct(question: str, contexts: str=None):
+async def direct(question: str, contexts: str = None):
     if isinstance(question, (list, tuple)):
-        question = ''.join(map(str, question))
+        question = "".join(map(str, question))
     pass
+
 
 # multistep?
 @retry("multistep")
-async def multistep(question: str, contexts: str=None):
+async def multistep(question: str, contexts: str = None):
     pass
+
 
 # label?
 @retry("label")
-async def label(question: str, sub_questions: str, answer: str=None):
+async def label(question: str, sub_questions: str, answer: str = None):
     pass
 
 
 @retry("contract")
-async def contract(question: str, sub_result: dict, independent_subqs: list, dependent_subqs: list, contexts: str=None):
+async def contract(
+    question: str,
+    independent_subqs: list,
+    dependent_subqs: list,
+    contexts: str = None,
+):
     pass
 
-# 
+
+#
 @retry("ensemble")
-async def ensemble(question: str, results: list, contexts: str=None):
+async def ensemble(question: str, results: list, contexts: str = None):
     pass
+
 
 @contextmanager
 def temporary_retries(value):
