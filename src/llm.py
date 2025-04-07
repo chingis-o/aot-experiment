@@ -14,11 +14,13 @@ MAX_RETRIES = 3
 total_prompt_tokens, total_completion_tokens, call_count, cost = 0, 0, 0, 0
 current_prompt_tokens, current_completion_tokens = 0, 0
 
+
 def set_model(model):
     global model_name
     model_name = model
 
-async def gen(msg, model=None, temperature=None, response_format="json_object"):
+
+async def generate(msg, model=None, temperature=None, response_format="json_object"):
     global call_count, cost, current_prompt_tokens, current_completion_tokens, model_name
     if not model:
         model = model_name
@@ -39,7 +41,7 @@ async def gen(msg, model=None, temperature=None, response_format="json_object"):
                         # temperature=temperature,
                         stop=None,
                         # max_tokens=8192,
-                        response_format={"type": response_format}
+                        response_format={"type": response_format},
                     )
                 else:
                     response = await client.chat.completions.create(
@@ -50,15 +52,15 @@ async def gen(msg, model=None, temperature=None, response_format="json_object"):
                         temperature=temperature,
                         stop=None,
                         max_tokens=8192,
-                        response_format={"type": response_format}
+                        response_format={"type": response_format},
                     )
                 content = response.choices[0].message.content
-                
+
                 usage = response.usage
                 current_prompt_tokens = usage.prompt_tokens
                 current_completion_tokens = usage.completion_tokens
                 update_token()
-                
+
                 return content
         except asyncio.TimeoutError:
             errors.append("Request timeout")
@@ -68,8 +70,8 @@ async def gen(msg, model=None, temperature=None, response_format="json_object"):
             errors.append(f"API error: {str(e)}")
         except Exception as e:
             errors.append(f"Error: {type(e).__name__}, {str(e)}")
-        
-        await asyncio.sleep(DEFAULT_RETRY_AFTER * (2 ** retry))
+
+        await asyncio.sleep(DEFAULT_RETRY_AFTER * (2**retry))
 
     print(f"Error log: {errors}")
 
@@ -77,10 +79,12 @@ async def gen(msg, model=None, temperature=None, response_format="json_object"):
 def get_cost():
     return cost
 
+
 def update_token():
     global total_prompt_tokens, total_completion_tokens, current_completion_tokens, current_prompt_tokens
     total_prompt_tokens += current_prompt_tokens
     total_completion_tokens += current_completion_tokens
+
 
 def reset_token():
     global total_prompt_tokens, total_completion_tokens, call_count
@@ -88,8 +92,10 @@ def reset_token():
     total_completion_tokens = 0
     call_count = 0
 
+
 def get_token():
     return total_prompt_tokens, total_completion_tokens
+
 
 def get_call_count():
     return call_count
