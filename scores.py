@@ -3,6 +3,7 @@ import re
 from collections import Counter
 from typing import Union
 
+
 def extract_boxed(s):
     import re
 
@@ -12,30 +13,30 @@ def extract_boxed(s):
         return match.group(1)
     return ""
 
+
 def eval_math(s):
     try:
         return eval(str(s).replace(",", ""))
     except:
         return 0
 
+
 def score_math(prediction, groundtruth, dataset="aime"):
+    def compare(groundtruth):
+        return eval_math(prediction) == eval_math(groundtruth)
+
     try:
-        if dataset == "math":
-            return (
-                1
-                if eval_math(prediction) == eval_math(extract_boxed(groundtruth))
-                else 0
-            )
-        elif dataset == "gsm8k":
-            return (
-                1
-                if eval_math(prediction) == eval_math(groundtruth.split("####")[1])
-                else 0
-            )
-        elif dataset == "aime":
-            return 1 if eval_math(prediction) == eval_math(groundtruth) else 0
+        if dataset == "math" and compare(extract_boxed(groundtruth)):
+            return 1
+        elif dataset == "gsm8k" and compare(groundtruth.split("####")[1]):
+            return 1
+        elif dataset == "aime" and compare(groundtruth):
+            return 1
+        else:
+            return 0
     except:
         return 0
+
 
 def score_multichain(prediction, target):
     if not prediction or not target:
@@ -48,7 +49,10 @@ def score_multichain(prediction, target):
         # Remove any brackets and convert to uppercase
         return answer.replace("(", "").replace(")", "").upper()
 
-    return 1 if normalize_answer(prediction) == normalize_answer(target) else 0
+    if normalize_answer(prediction) == normalize_answer(target):
+        return 1
+    else:
+        return 0
 
 
 def normalize_answer(s):
@@ -68,21 +72,22 @@ def normalize_answer(s):
 
     return white_space_fix(remove_articles(remove_punc(lower(s))))
 
+
 def f1_score(prediction, ground_truth):
     normalized_prediction = normalize_answer(prediction)
     normalized_ground_truth = normalize_answer(ground_truth)
 
     ZERO_METRIC = (0, 0, 0)
 
-    if (
-        normalized_prediction in ["yes", "no", "noanswer"]
-        and normalized_prediction != normalized_ground_truth
-    ):
+    def compare():
+        return normalized_prediction != normalized_ground_truth
+
+    def check(text):
+        return text in ["yes", "no", "noanswer"]
+
+    if check(normalized_prediction) and compare():
         return ZERO_METRIC
-    if (
-        normalized_ground_truth in ["yes", "no", "noanswer"]
-        and normalized_prediction != normalized_ground_truth
-    ):
+    if check(normalized_ground_truth) and compare():
         return ZERO_METRIC
 
     prediction_tokens = normalized_prediction.split()
@@ -96,12 +101,12 @@ def f1_score(prediction, ground_truth):
     f1 = (2 * precision * recall) / (precision + recall)
     return f1, precision, recall
 
+
 def score_multihop(prediction: str, groundtruth: Union[str, list]):
     try:
         if isinstance(groundtruth, list):
-            f1 = max([f1_score(prediction, gt)[0] for gt in groundtruth])
+            return max([f1_score(prediction, gt)[0] for gt in groundtruth])
         else:
-            f1 = f1_score(prediction, groundtruth)[0]
-        return f1
+            return f1_score(prediction, groundtruth)[0]
     except:
         return 0
