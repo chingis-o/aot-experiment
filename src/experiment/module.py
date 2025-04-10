@@ -20,6 +20,7 @@ module = None
 # prompter
 prompter = None
 
+
 def set_module(module_name):  # math, multi-choice, multi-hop
     global module, prompter, score
     module = module_name
@@ -33,16 +34,20 @@ def set_module(module_name):  # math, multi-choice, multi-hop
         prompter = multihop
         score = score_mh
 
+
 async def direct(question: str):
     if isinstance(question, (list, tuple)):
         question = "".join(map(str, question))
     return prompter.direct(question)
 
+
 async def multistep(question: str):
     return prompter.multistep(question)
 
+
 async def label(question: str, sub_questions: str, answer: str = None):
     return prompter.label(question, sub_questions, answer)
+
 
 async def contract(
     question: str,
@@ -50,7 +55,9 @@ async def contract(
     independent_subqs: list,
     dependent_subqs: list,
 ):
-    return prompter.contract(question, decompose_result, independent_subqs, dependent_subqs)
+    return prompter.contract(
+        question, decompose_result, independent_subqs, dependent_subqs
+    )
 
 
 async def ensemble(question: str, results: list):
@@ -60,15 +67,16 @@ async def ensemble(question: str, results: list):
 async def label(func_name, prompt):
     response = await generate(prompt, response_format="json_object")
     result = extract_json(response)
-    
+
     if prompter.check(func_name, result):
         return result
-    
+
     return {}
+
 
 async def decompose(question: str):
     retries = LABEL_RETRIES
-    
+
     if module == "multi-hop":
         multistep_result = await multistep(question)
         subquestions = label_result["sub-questions"]
@@ -78,15 +86,13 @@ async def decompose(question: str):
             label_result = await label(question, multistep_result)
 
             if len(subquestions) != len(multistep_subquestions):
-                    retries -= 1
-                    continue
-           
+                retries -= 1
+                continue
+
             calculate_depth(subquestions)
             retries -= 1
-        
-        for step, note in zip(
-            multistep_subquestions, subquestions
-        ):
+
+        for step, note in zip(multistep_subquestions, subquestions):
             step["depend"] = note["depend"]
         return multistep_result
     else:
@@ -103,19 +109,18 @@ async def decompose(question: str):
 
 
 async def merging(question: str, decompose_result: dict, contexts: str = None):
-    independent_subqs = [
-        sub_q
-        for sub_q in decompose_result["sub-questions"]
-        if len(sub_q["depend"]) == 0
-    ]
+    subquestions = decompose_result["sub-questions"]
+
+    independent_subqs = [sub_q for sub_q in subquestions if len(sub_q["depend"]) == 0]
+
     dependent_subqs = [
-        sub_q
-        for sub_q in decompose_result["sub-questions"]
-        if sub_q not in independent_subqs
+        sub_q for sub_q in subquestions if sub_q not in independent_subqs
     ]
 
     # contract
-    contractd_result = await contract(question, decompose_result, independent_subqs, dependent_subqs)
+    contractd_result = await contract(
+        question, decompose_result, independent_subqs, dependent_subqs
+    )
 
     # Extract thought process and optimized question
     contractd_question = contractd_result.get("question", "")
