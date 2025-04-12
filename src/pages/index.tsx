@@ -2,6 +2,7 @@ import Head from "next/head";
 import { useState } from "react";
 import { ChatOllama } from "@langchain/ollama";
 import type { MessageContent } from "@langchain/core/messages";
+import bbh from "../data/bbh/test.json";
 
 const llm = new ChatOllama({
   model: "deepseek-r1:7b",
@@ -22,12 +23,23 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex min-h-screen flex-col items-center justify-center">
+        <ul className="my-5 grid max-w-3/5 gap-2.5">
+          {bbh.slice(0, 10).map((data, index) => {
+            return (
+              <>
+                <li key={index}>
+                  {index + 1} ) {data?.input}
+                </li>
+                <hr />
+              </>
+            );
+          })}
+        </ul>
         <textarea
           className="mb-6 rounded-md border-2 border-blue-300 px-4 py-1 outline focus:border-blue-400"
           onChange={(event) => setPrompt(event.target.value)}
-        >
-          {prompt}
-        </textarea>
+          value={prompt}
+        />
         <button
           className="cursor-pointer rounded-md border-2 border-blue-300 px-7 py-1"
           disabled={loading}
