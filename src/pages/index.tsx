@@ -12,6 +12,7 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [result, setResult] = useState<MessageContent>();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   return (
     <>
@@ -33,12 +34,14 @@ export default function Home() {
           onClick={async () => {
             console.log("call");
             setLoading(true);
+            setError(false);
             setResult("");
             try {
               const result = await llm.invoke(prompt);
 
               setResult(result.content);
             } catch (error) {
+              setError(true);
               console.log(error);
             }
             setLoading(false);
@@ -47,7 +50,8 @@ export default function Home() {
           Invoke
         </button>
         {loading ? "generating..." : ""}
-        <div>{String(result)}</div>
+        {error ? "Error occurred" : ""}
+        <div>{String(result ?? "")}</div>
       </main>
     </>
   );
