@@ -3,17 +3,36 @@ import { useState } from "react";
 import { ChatOllama } from "@langchain/ollama";
 import type { MessageContent } from "@langchain/core/messages";
 import bbh from "../data/bbh/test.json";
+import gsm8k from "../data/gsm8k/test.json";
+import hotpotqa from "../data/hotpotqa/test.json";
+import longbench from "../data/longbench/test.json";
+import math from "../data/math/test.json";
+import mmlu from "../data/mmlu/test.json";
 
 const llm = new ChatOllama({
   model: "deepseek-r1:7b",
   temperature: 0,
 });
 
+const tests = [
+  { name: "bbh", dataset: bbh },
+  { name: "gsm8k", dataset: gsm8k },
+  { name: "hotpotqa", dataset: hotpotqa },
+  { name: "longbench", dataset: longbench },
+  { name: "math", dataset: math },
+  { name: "mmlu", dataset: mmlu },
+];
+
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [result, setResult] = useState<MessageContent>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [dataset, setDataset] = useState(
+    tests.find((value) => value.name === "bbh")?.dataset,
+  );
+
+  console.log(dataset);
 
   return (
     <>
@@ -23,17 +42,39 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex min-h-screen flex-col items-center justify-center">
-        <ul className="my-5 grid max-w-3/5 gap-2.5">
-          {bbh.slice(0, 10).map((data, index) => {
+        <ul className="my-5 grid w-full max-w-3/5 justify-start gap-2.5">
+          {tests.map((data, index) => {
             return (
-              <>
-                <li key={index}>
-                  {index + 1} ) {data?.input}
-                </li>
-                <hr />
-              </>
+              <li
+                className="cursor-pointer"
+                key={index}
+                onClick={() =>
+                  setDataset(
+                    tests.find((value) => value.name === data.name)?.dataset,
+                  )
+                }
+              >
+                {data.name}
+              </li>
             );
           })}
+        </ul>
+        <ul className="my-5 grid max-w-3/5 gap-2.5">
+          {Array.isArray(dataset)
+            ? dataset.slice(0, 10).map((data, index) => {
+                return (
+                  <>
+                    <li key={index}>
+                      {index + 1} ) {data && data?.input}
+                      {data && data?.question}
+                      {data && data?.Question}
+                      {data && data?.problem}
+                    </li>
+                    <hr />
+                  </>
+                );
+              })
+            : null}
         </ul>
         <textarea
           className="mb-6 rounded-md border-2 border-blue-300 px-4 py-1 outline focus:border-blue-400"
