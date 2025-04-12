@@ -8,6 +8,7 @@ import hotpotqa from "../data/hotpotqa/test.json";
 import longbench from "../data/longbench/test.json";
 import math from "../data/math/test.json";
 import mmlu from "../data/mmlu/test.json";
+import prompts from "../prompts/examples";
 
 const llm = new ChatOllama({
   model: "deepseek-r1:7b",
@@ -32,8 +33,6 @@ export default function Home() {
     tests.find((value) => value.name === "bbh")?.dataset,
   );
 
-  console.log(dataset);
-
   return (
     <>
       <Head>
@@ -42,6 +41,9 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex min-h-screen flex-col items-center justify-center">
+        <div className="my-5 grid w-full max-w-3/5 justify-start gap-2.5">
+          {prompts.direct}
+        </div>
         <ul className="my-5 grid w-full max-w-3/5 justify-start gap-2.5">
           {tests.map((data, index) => {
             return (
@@ -85,13 +87,11 @@ export default function Home() {
           className="cursor-pointer rounded-md border-2 border-blue-300 px-7 py-1"
           disabled={loading}
           onClick={async () => {
-            console.log("call");
             setLoading(true);
             setError(false);
             setResult("");
             try {
               const result = await llm.invoke(prompt);
-
               setResult(result.content);
             } catch (error) {
               setError(true);
