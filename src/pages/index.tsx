@@ -96,8 +96,10 @@ export default function Home() {
                 setError(false);
                 setResult("");
                 try {
-                  const result = await llm.invoke(prompt);
-                  setResult(result.content);
+                  const stream = await llm.stream(prompt);
+                  for await (const chunk of stream) {
+                    setResult((prev) => `${prev} ${chunk.content}`); // Print each chunk as it arrives
+                  }
                 } catch (error) {
                   setError(true);
                   console.log(error);
@@ -107,7 +109,6 @@ export default function Home() {
             >
               Invoke
             </Button>
-            {loading ? "generating..." : ""}
             {error ? "Error occurred" : ""}
             <div>{String(result ?? "")}</div>
           </div>
