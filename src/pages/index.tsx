@@ -40,6 +40,8 @@ const tests: Test[] = [
   { name: "mmlu", dataset: mmlu },
 ];
 
+const methods = Object.entries(prompts);
+
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [result, setResult] = useState<MessageContent>();
@@ -50,6 +52,7 @@ export default function Home() {
   );
   const [page, setPage] = useState(1);
   const [pageRange, setPageRange] = useState([0, 10]);
+  const [method, setMethod] = useState(prompts.direct(""));
 
   return (
     <>
@@ -60,9 +63,20 @@ export default function Home() {
       </Head>
       <main className="my-10 flex min-h-screen flex-col items-center justify-center">
         <div className="container grid max-w-2/3 justify-start">
-          <div className="my-5 grid justify-start gap-2.5">
-            {prompts.direct("")}
+          <div className="flex gap-3">
+            {methods.map((data, index) => {
+              return (
+                <Button
+                  key={index}
+                  className="cursor-pointer"
+                  onClick={() => setMethod(data[1](""))}
+                >
+                  {data[0]}
+                </Button>
+              );
+            })}
           </div>
+          <div className="my-5 grid justify-start gap-2.5">{method}</div>
           <div className="container grid justify-items-start">
             <Textarea
               className="mb-6"

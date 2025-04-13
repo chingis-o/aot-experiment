@@ -1,4 +1,4 @@
-function direct(question: string) {
+function direct(question?: string) {
   return `You are a precise math problem solver. Solve the given math problem step by step:
 
     QUESTION: ${question}
@@ -8,7 +8,7 @@ function direct(question: string) {
     You can freely reason in your response, but please enclose the final answer within <answer></answer> tags (pure number without units and explanations)`;
 }
 
-function multistep(question: string) {
+function multistep(question?: string) {
   return `You are a precise math problem solver. Solve the given math problem step by step:
 
     QUESTION: ${question}
@@ -18,7 +18,7 @@ function multistep(question: string) {
     You can freely reason in your response, but please enclose the final answer within <answer></answer> tags (pure number without units and explanations)`;
 }
 
-function label(question: string, trajectory: string, answer: string) {
+function label(question?: string, trajectory?: string, answer?: string) {
   return `You are tasked with breaking down a math problem reasoning process into sub-questions.
 
     Original Question: ${question}
@@ -49,11 +49,11 @@ function label(question: string, trajectory: string, answer: string) {
 }
 
 function contract(
-  question: string,
-  response: string,
-  sub_questions: string,
-  independent: string,
-  dependent: string,
+  question?: string,
+  response?: string,
+  sub_questions?: string,
+  independent?: string,
+  dependent?: string,
 ) {
   return `You are a math problem solver specializing in optimizing step-by-step reasoning processes. Your task is to optimize the existing reasoning trajectory into a more efficient, single self-contained question.
         
@@ -77,7 +77,7 @@ function contract(
     ${dependent}`;
 }
 
-function ensemble(question: string, solutions: string) {
+function ensemble(question?: string, solutions?: string) {
   return `You are a precise math problem solver. Compare then synthesize the best answer from multiple solutions to solve the following question.
 
     QUESTION: ${question}
