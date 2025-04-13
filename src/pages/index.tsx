@@ -10,6 +10,7 @@ import math from "../data/math/test.json";
 import mmlu from "../data/mmlu/test.json";
 import prompts from "../prompts/examples";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 const llm = new ChatOllama({
   model: "deepseek-r1:7b",
@@ -81,8 +82,9 @@ export default function Home() {
               : null}
           </ul>
           <div className="container grid justify-items-start">
-            <textarea
-              className="mb-6 rounded-md border-2 border-blue-300 px-4 py-1 outline focus:border-blue-400"
+            <Textarea
+              className="mb-6"
+              rows={10}
               onChange={(event) => setPrompt(event.target.value)}
               value={prompt}
             />
