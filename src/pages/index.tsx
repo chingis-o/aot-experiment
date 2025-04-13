@@ -46,8 +46,6 @@ export default function Home() {
   const [page, setPage] = useState(1);
   const [pageRange, setPageRange] = useState([0, 10]);
 
-  console.log(pageRange);
-
   return (
     <>
       <Head>
@@ -58,7 +56,7 @@ export default function Home() {
       <main className="my-10 flex min-h-screen flex-col items-center justify-center">
         <div className="container grid max-w-2/3 justify-start">
           <div className="my-5 grid justify-start gap-2.5">
-            {prompts.direct}
+            {prompts.direct("")}
           </div>
           <ul className="my-5 flex justify-start gap-2.5">
             {tests.map((data, index) => {
@@ -131,12 +129,13 @@ export default function Home() {
                 <PaginationNext
                   className="cursor-pointer"
                   onClick={() =>
+                    Array.isArray(dataset) &&
                     setPageRange((prev) => {
-                      console.log(
-                        prev[0] + 10 < Math.ceil(dataset?.length / 10),
-                      );
                       return [
-                        prev[0] !== undefined ? prev[0] + 10 : prev[0],
+                        prev[0] !== undefined &&
+                        prev[0] < Math.ceil(dataset?.length / 10)
+                          ? 0
+                          : 0,
                         prev[1]
                           ? prev[1] + 10 < Math.ceil(dataset?.length / 10)
                             ? prev[1] + 10
