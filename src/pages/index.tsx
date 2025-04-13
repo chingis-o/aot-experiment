@@ -11,6 +11,15 @@ import mmlu from "../data/mmlu/test.json";
 import prompts from "../prompts/examples";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const llm = new ChatOllama({
   model: "deepseek-r1:7b",
@@ -34,6 +43,10 @@ export default function Home() {
   const [dataset, setDataset] = useState(
     tests.find((value) => value.name === "bbh")?.dataset,
   );
+  const [page, setPage] = useState(1);
+  const [pageRange, setPageRange] = useState([0, 10]);
+
+  console.log(pageRange);
 
   return (
     <>
@@ -47,7 +60,7 @@ export default function Home() {
           <div className="my-5 grid justify-start gap-2.5">
             {prompts.direct}
           </div>
-          <ul className="my-5 grid justify-start gap-2.5">
+          <ul className="my-5 flex justify-start gap-2.5">
             {tests.map((data, index) => {
               return (
                 <li
@@ -81,6 +94,62 @@ export default function Home() {
                 })
               : null}
           </ul>
+          <Pagination className="mb-10">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  className="cursor-pointer"
+                  onClick={() =>
+                    setPageRange((prev) => {
+                      return [
+                        prev[0] ? (prev[0] - 10 > 0 ? prev[0] - 10 : 0) : 0,
+                        prev[1] ? (prev[1] - 10 > 10 ? prev[1] - 10 : 10) : 10,
+                      ];
+                    })
+                  }
+                />
+              </PaginationItem>
+              {Array.isArray(dataset)
+                ? Array.from({ length: Math.ceil(dataset?.length / 10) })
+                    .slice(...pageRange)
+                    .map((_, index) => (
+                      <PaginationItem
+                        onClick={() => setPage(index + 1)}
+                        key={index}
+                        className="cursor-pointer"
+                      >
+                        <PaginationLink isActive={page === index + 1}>
+                          {index + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))
+                : null}
+              <PaginationItem>
+                <PaginationEllipsis />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  className="cursor-pointer"
+                  onClick={() =>
+                    setPageRange((prev) => {
+                      console.log(
+                        prev[0] + 10 < Math.ceil(dataset?.length / 10),
+                      );
+                      return [
+                        prev[0] !== undefined ? prev[0] + 10 : prev[0],
+                        prev[1]
+                          ? prev[1] + 10 < Math.ceil(dataset?.length / 10)
+                            ? prev[1] + 10
+                            : 10
+                          : 10,
+                      ];
+                    })
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+
           <div className="container grid justify-items-start">
             <Textarea
               className="mb-6"
