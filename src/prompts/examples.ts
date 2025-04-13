@@ -1,22 +1,28 @@
-const prompt = {
-  direct: `You are a precise math problem solver. Solve the given math problem step by step:
+function direct(question: string) {
+  return `You are a precise math problem solver. Solve the given math problem step by step:
 
-    QUESTION: {question}
+    QUESTION: ${question}
         
     Please extend your chain of thought as much as possible; the longer the chain of thought, the better.
         
-    You can freely reason in your response, but please enclose the final answer within <answer></answer> tags (pure number without units and explanations)`,
-  multistep: `You are a precise math problem solver. Solve the given math problem step by step:
+    You can freely reason in your response, but please enclose the final answer within <answer></answer> tags (pure number without units and explanations)`;
+}
 
-    QUESTION: {question}
+function multistep(question: string) {
+  return `You are a precise math problem solver. Solve the given math problem step by step:
+
+    QUESTION: ${question}
         
     Please extend your chain of thought as much as possible; the longer the chain of thought, the better.
         
-    You can freely reason in your response, but please enclose the final answer within <answer></answer> tags (pure number without units and explanations)`,
-  label: `You are tasked with breaking down a math problem reasoning process into sub-questions.
+    You can freely reason in your response, but please enclose the final answer within <answer></answer> tags (pure number without units and explanations)`;
+}
 
-    Original Question: {question}
-    Complete Reasoning Process: {trajectory}
+function label(question: string, trajectory: string, answer: string) {
+  return `You are tasked with breaking down a math problem reasoning process into sub-questions.
+
+    Original Question: ${question}
+    Complete Reasoning Process: ${trajectory}
 
     Instructions:
     1. Break down the reasoning process into a series of sub-questions
@@ -38,16 +44,25 @@ const prompt = {
             }},
             ...
         ],
-        "answer": {answer}
-    }}`,
-  contract: `You are a math problem solver specializing in optimizing step-by-step reasoning processes. Your task is to optimize the existing reasoning trajectory into a more efficient, single self-contained question.
+        "answer": ${answer}
+    }}`;
+}
+
+function contract(
+  question: string,
+  response: string,
+  sub_questions: string,
+  independent: string,
+  dependent: string,
+) {
+  return `You are a math problem solver specializing in optimizing step-by-step reasoning processes. Your task is to optimize the existing reasoning trajectory into a more efficient, single self-contained question.
         
-    For the original question: {question}
+    For the original question: ${question}
         
     Here are step-by-step reasoning process:
-    {response}
+    ${response}
         
-    {sub_questions}
+    ${sub_questions}
         
     Here are explanations of key concepts:
     1. self-contained: The optimized question must be solvable independently, without relying on any external information
@@ -56,20 +71,31 @@ const prompt = {
     You can freely reason in your response, but please enclose the your optimized question within <question></question> tags
 
     The following sub-questions and their answers can serve as known conditions:
-    {independent}
+    ${independent}
     
     The descriptions of the following questions can be used to form the description of the optimized problem:
-    {dependent}`,
-  ensemble: `You are a precise math problem solver. Compare then synthesize the best answer from multiple solutions to solve the following question.
+    ${dependent}`;
+}
 
-    QUESTION: {question}
+function ensemble(question: string, solutions: string) {
+  return `You are a precise math problem solver. Compare then synthesize the best answer from multiple solutions to solve the following question.
+
+    QUESTION: ${question}
 
     SOLUTIONS:
-    {solutions}
+    ${solutions}
 
     Please extend your chain of thought as much as possible; the longer the chain of thought, the better.
 
-    You can freely reason in your response, but please enclose the final answer within <answer></answer> tags (pure number without units and explanations)`,
+    You can freely reason in your response, but please enclose the final answer within <answer></answer> tags (pure number without units and explanations)`;
+}
+
+const prompt = {
+  direct,
+  multistep,
+  label,
+  contract,
+  ensemble,
 };
 
 export default prompt;
