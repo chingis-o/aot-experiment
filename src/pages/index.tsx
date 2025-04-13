@@ -9,6 +9,7 @@ import longbench from "../data/longbench/test.json";
 import math from "../data/math/test.json";
 import mmlu from "../data/mmlu/test.json";
 import prompts from "../prompts/examples";
+import { Button } from "@/components/ui/button";
 
 const llm = new ChatOllama({
   model: "deepseek-r1:7b",
@@ -40,71 +41,75 @@ export default function Home() {
         <meta name="description" content="AoT app" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="flex min-h-screen flex-col items-center justify-center">
-        <div className="my-5 grid w-full max-w-3/5 justify-start gap-2.5">
-          {prompts.direct}
-        </div>
-        <ul className="my-5 grid w-full max-w-3/5 justify-start gap-2.5">
-          {tests.map((data, index) => {
-            return (
-              <li
-                className="cursor-pointer"
-                key={index}
-                onClick={() =>
-                  setDataset(
-                    tests.find((value) => value.name === data.name)?.dataset,
-                  )
+      <main className="my-10 flex min-h-screen flex-col items-center justify-center">
+        <div className="container grid max-w-2/3 justify-start">
+          <div className="my-5 grid justify-start gap-2.5">
+            {prompts.direct}
+          </div>
+          <ul className="my-5 grid justify-start gap-2.5">
+            {tests.map((data, index) => {
+              return (
+                <li
+                  key={index}
+                  onClick={() =>
+                    setDataset(
+                      tests.find((value) => value.name === data.name)?.dataset,
+                    )
+                  }
+                >
+                  <Button className="cursor-pointer">{data.name}</Button>
+                </li>
+              );
+            })}
+          </ul>
+
+          <ul className="my-5 grid gap-2.5">
+            {Array.isArray(dataset)
+              ? dataset.slice(0, 10).map((data, index) => {
+                  return (
+                    <>
+                      <li key={index}>
+                        {index + 1} ) {data && data?.input}
+                        {data && data?.question}
+                        {data && data?.Question}
+                        {data && data?.problem}
+                      </li>
+                      <hr />
+                    </>
+                  );
+                })
+              : null}
+          </ul>
+          <div className="container grid justify-items-start">
+            <textarea
+              className="mb-6 rounded-md border-2 border-blue-300 px-4 py-1 outline focus:border-blue-400"
+              onChange={(event) => setPrompt(event.target.value)}
+              value={prompt}
+            />
+            <Button
+              className="cursor-pointer px-7 py-1"
+              disabled={loading}
+              onClick={async () => {
+                setLoading(true);
+                setError(false);
+                setResult("");
+                try {
+                  const result = await llm.invoke(prompt);
+                  setResult(result.content);
+                } catch (error) {
+                  setError(true);
+                  console.log(error);
                 }
-              >
-                {data.name}
-              </li>
-            );
-          })}
-        </ul>
-        <ul className="my-5 grid max-w-3/5 gap-2.5">
-          {Array.isArray(dataset)
-            ? dataset.slice(0, 10).map((data, index) => {
-                return (
-                  <>
-                    <li key={index}>
-                      {index + 1} ) {data && data?.input}
-                      {data && data?.question}
-                      {data && data?.Question}
-                      {data && data?.problem}
-                    </li>
-                    <hr />
-                  </>
-                );
-              })
-            : null}
-        </ul>
-        <textarea
-          className="mb-6 rounded-md border-2 border-blue-300 px-4 py-1 outline focus:border-blue-400"
-          onChange={(event) => setPrompt(event.target.value)}
-          value={prompt}
-        />
-        <button
-          className="cursor-pointer rounded-md border-2 border-blue-300 px-7 py-1"
-          disabled={loading}
-          onClick={async () => {
-            setLoading(true);
-            setError(false);
-            setResult("");
-            try {
-              const result = await llm.invoke(prompt);
-              setResult(result.content);
-            } catch (error) {
-              setError(true);
-              console.log(error);
-            }
-            setLoading(false);
-          }}
-        >
-          Invoke
-        </button>
-        {loading ? "generating..." : ""}
-        {error ? "Error occurred" : ""}
-        <div>{String(result ?? "")}</div>
+                setLoading(false);
+              }}
+            >
+              Invoke
+            </Button>
+            {loading ? "generating..." : ""}
+            {error ? "Error occurred" : ""}
+            <div>{String(result ?? "")}</div>
+          </div>
+        </div>
       </main>
     </>
   );
