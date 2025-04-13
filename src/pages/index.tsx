@@ -26,11 +26,16 @@ const llm = new ChatOllama({
   temperature: 0,
 });
 
-const tests = [
+interface Test {
+  name: string;
+  dataset: any[];
+}
+
+const tests: Test[] = [
   { name: "bbh", dataset: bbh },
   { name: "gsm8k", dataset: gsm8k },
-  { name: "hotpotqa", dataset: hotpotqa },
-  { name: "longbench", dataset: longbench },
+  // { name: "hotpotqa", dataset: [...hotpotqa] },
+  // { name: "longbench", dataset: [...longbench] },
   { name: "math", dataset: math },
   { name: "mmlu", dataset: mmlu },
 ];
@@ -58,6 +63,37 @@ export default function Home() {
           <div className="my-5 grid justify-start gap-2.5">
             {prompts.direct("")}
           </div>
+          <div className="container grid justify-items-start">
+            <Textarea
+              className="mb-6"
+              rows={10}
+              onChange={(event) => setPrompt(event.target.value)}
+              value={prompt}
+            />
+            <Button
+              className="cursor-pointer px-7 py-1"
+              disabled={loading}
+              onClick={async () => {
+                setLoading(true);
+                setError(false);
+                setResult("");
+                try {
+                  const stream = await llm.stream(prompt);
+                  for await (const chunk of stream) {
+                    setResult((prev) => `${prev} ${chunk.content}`); // Print each chunk as it arrives
+                  }
+                } catch (error) {
+                  setError(true);
+                  console.log(error);
+                }
+                setLoading(false);
+              }}
+            >
+              Invoke
+            </Button>
+            {error ? "Error occurred" : ""}
+            <div>{String(result ?? "")}</div>
+          </div>
           <ul className="my-5 flex justify-start gap-2.5">
             {tests.map((data, index) => {
               return (
@@ -69,7 +105,9 @@ export default function Home() {
                     )
                   }
                 >
-                  <Button className="cursor-pointer">{data.name}</Button>
+                  <Button className="cursor-pointer">
+                    {data.name} {data.dataset.length}
+                  </Button>
                 </li>
               );
             })}
@@ -85,6 +123,13 @@ export default function Home() {
                         {data && data?.question}
                         {data && data?.Question}
                         {data && data?.problem}
+                      </li>
+                      <hr />
+                      <li key={index}>
+                        Correct answer: {data && data?.target}
+                        {data && data?.answer}
+                        {data && data?.problem}
+                        {data && data?.Answer}
                       </li>
                       <hr />
                     </>
@@ -148,38 +193,6 @@ export default function Home() {
               </PaginationItem>
             </PaginationContent>
           </Pagination>
-
-          <div className="container grid justify-items-start">
-            <Textarea
-              className="mb-6"
-              rows={10}
-              onChange={(event) => setPrompt(event.target.value)}
-              value={prompt}
-            />
-            <Button
-              className="cursor-pointer px-7 py-1"
-              disabled={loading}
-              onClick={async () => {
-                setLoading(true);
-                setError(false);
-                setResult("");
-                try {
-                  const stream = await llm.stream(prompt);
-                  for await (const chunk of stream) {
-                    setResult((prev) => `${prev} ${chunk.content}`); // Print each chunk as it arrives
-                  }
-                } catch (error) {
-                  setError(true);
-                  console.log(error);
-                }
-                setLoading(false);
-              }}
-            >
-              Invoke
-            </Button>
-            {error ? "Error occurred" : ""}
-            <div>{String(result ?? "")}</div>
-          </div>
         </div>
       </main>
     </>
