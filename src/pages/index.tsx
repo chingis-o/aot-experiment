@@ -42,9 +42,6 @@ const tests: Test[] = [
 ];
 
 export default function Home() {
-  const [result, setResult] = useState<MessageContent>();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
   // can be improved
   const [dataset, setDataset] = useState(
     tests.find((value) => value.name === "bbh")?.dataset,
@@ -61,6 +58,9 @@ export default function Home() {
 
   function GenerateResponse({ question }: { question: string }) {
     const [prompt, setPrompt] = useState("");
+    const [result, setResult] = useState<MessageContent>();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(false);
 
     useEffect(() => {
       setPrompt(direct(question));
