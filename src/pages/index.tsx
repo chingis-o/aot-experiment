@@ -96,7 +96,9 @@ export default function Home() {
           Generate
         </Button>
         {error ? "Error occurred" : ""}
-        <div>{String(result ?? "")}</div>
+        <div className="my-4 w-full rounded-md border-2 border-blue-500 px-3 py-2">
+          {String(result ?? "")}
+        </div>
       </div>
     );
   }
