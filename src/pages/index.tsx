@@ -31,6 +31,8 @@ interface Test {
   dataset: any[];
 }
 
+
+// TODO handle various dataset schemas
 const tests: Test[] = [
   { name: "bbh", dataset: bbh },
   { name: "gsm8k", dataset: gsm8k },
@@ -47,12 +49,19 @@ export default function Home() {
   const [result, setResult] = useState<MessageContent>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  // can be improved
   const [dataset, setDataset] = useState(
     tests.find((value) => value.name === "bbh")?.dataset,
   );
   const [page, setPage] = useState(1);
   const [pageRange, setPageRange] = useState([0, 10]);
   const [method, setMethod] = useState(prompts.direct(""));
+
+  // method selector
+  // aot algoritm 
+  // TODO copy text or insert text
+  // TODO fix pagination
+  // TODO compact display of questions
 
   return (
     <>
@@ -103,7 +112,7 @@ export default function Home() {
                 setLoading(false);
               }}
             >
-              Invoke
+              Generate
             </Button>
             {error ? "Error occurred" : ""}
             <div>{String(result ?? "")}</div>
@@ -126,7 +135,6 @@ export default function Home() {
               );
             })}
           </ul>
-
           <ul className="my-5 grid gap-2.5">
             {Array.isArray(dataset)
               ? dataset.slice(0, 10).map((data, index) => {
