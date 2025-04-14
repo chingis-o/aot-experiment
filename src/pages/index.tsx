@@ -41,10 +41,7 @@ const tests: Test[] = [
   { name: "mmlu", dataset: mmlu },
 ];
 
-const methods: { [name: string]: any }[] = Object.entries(prompts);
-
 export default function Home() {
-  const [prompt, setPrompt] = useState("");
   const [result, setResult] = useState<MessageContent>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -54,13 +51,7 @@ export default function Home() {
   );
   const [page, setPage] = useState(1);
   const [pageRange, setPageRange] = useState([0, 10]);
-  const [question, setQuestion] = useState("");
-  // const [method, setMethod] = useState(prompts.direct(question));
-  const { direct, multistep, label, contract, ensemble } = prompts;
-
-  const [method, setMethod] = useState(direct(question));
-
-  console.log(methods);
+  const { direct } = prompts;
 
   // TODO aot algorithm
   // TODO copy text or insert text +
@@ -68,9 +59,92 @@ export default function Home() {
   // TODO compact display of questions
   // TODO insert question into method template +
 
-  useEffect(() => {
-    setPrompt(prompts.direct(question));
-  }, [question]);
+  function GenerateResponse({ question }: { question: string }) {
+    const [prompt, setPrompt] = useState("");
+
+    useEffect(() => {
+      setPrompt(direct(question));
+    }, [question]);
+
+    return (
+      <div className="container grid justify-items-start">
+        <Textarea
+          className="mb-6"
+          rows={10}
+          onChange={(event) => setPrompt(event.target.value)}
+          value={prompt}
+        />
+        <Button
+          className="cursor-pointer px-7 py-1"
+          disabled={loading}
+          onClick={async () => {
+            setLoading(true);
+            setError(false);
+            setResult("");
+            try {
+              const stream = await llm.stream(prompt);
+              for await (const chunk of stream) {
+                setResult((prev) => `${prev} ${chunk.content}`); // Print each chunk as it arrives
+              }
+            } catch (error) {
+              setError(true);
+              console.log(error);
+            }
+            setLoading(false);
+          }}
+        >
+          Generate
+        </Button>
+        {error ? "Error occurred" : ""}
+        <div>{String(result ?? "")}</div>
+      </div>
+    );
+  }
+
+  function Question({ index, data }: { index: number; data: any }) {
+    const [open, setOpen] = useState(false);
+
+    return (
+      <>
+        <li key={index} className="flex gap-2.5">
+          {index + 1} ) {data && data?.input}
+          {data && data?.question}
+          {data && data?.Question}
+          {data && data?.problem}
+          <Button
+            variant="outline"
+            className="cursor-pointer justify-self-end p-1"
+            onClick={() => setOpen((prev) => !prev)}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              className="lucide lucide-clipboard"
+            >
+              <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            </svg>
+          </Button>
+        </li>
+        <hr />
+        <li key={index}>
+          Correct answer: {data && data?.target}
+          {data && data?.answer}
+          {data && data?.problem}
+          {data && data?.Answer}
+        </li>
+        <hr />
+        {open && <GenerateResponse question={data?.input} />}
+      </>
+    );
+  }
 
   return (
     <>
@@ -102,52 +176,7 @@ export default function Home() {
           <ul className="my-5 grid gap-2.5">
             {Array.isArray(dataset)
               ? dataset.slice(0, 10).map((data, index) => {
-                  return (
-                    <>
-                      <li key={index} className="flex gap-2.5">
-                        {index + 1} ) {data && data?.input}
-                        {data && data?.question}
-                        {data && data?.Question}
-                        {data && data?.problem}
-                        <Button
-                          variant="outline"
-                          className="cursor-pointer justify-self-end p-1"
-                          onClick={() => setQuestion(data?.input)}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            className="lucide lucide-clipboard"
-                          >
-                            <rect
-                              width="8"
-                              height="4"
-                              x="8"
-                              y="2"
-                              rx="1"
-                              ry="1"
-                            ></rect>
-                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                          </svg>
-                        </Button>
-                      </li>
-                      <hr />
-                      <li key={index}>
-                        Correct answer: {data && data?.target}
-                        {data && data?.answer}
-                        {data && data?.problem}
-                        {data && data?.Answer}
-                      </li>
-                      <hr />
-                    </>
-                  );
+                  return <Question index={index} data={data} />;
                 })
               : null}
           </ul>
@@ -207,37 +236,6 @@ export default function Home() {
               </PaginationItem>
             </PaginationContent>
           </Pagination>
-          <div className="container grid justify-items-start">
-            <Textarea
-              className="mb-6"
-              rows={10}
-              onChange={(event) => setPrompt(event.target.value)}
-              value={prompt}
-            />
-            <Button
-              className="cursor-pointer px-7 py-1"
-              disabled={loading}
-              onClick={async () => {
-                setLoading(true);
-                setError(false);
-                setResult("");
-                try {
-                  const stream = await llm.stream(prompt);
-                  for await (const chunk of stream) {
-                    setResult((prev) => `${prev} ${chunk.content}`); // Print each chunk as it arrives
-                  }
-                } catch (error) {
-                  setError(true);
-                  console.log(error);
-                }
-                setLoading(false);
-              }}
-            >
-              Generate
-            </Button>
-            {error ? "Error occurred" : ""}
-            <div>{String(result ?? "")}</div>
-          </div>
         </div>
       </main>
     </>
