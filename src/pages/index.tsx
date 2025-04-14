@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChatOllama } from "@langchain/ollama";
 import type { MessageContent } from "@langchain/core/messages";
 import bbh from "../data/bbh/test.json";
@@ -41,7 +41,7 @@ const tests: Test[] = [
   { name: "mmlu", dataset: mmlu },
 ];
 
-const methods = Object.entries(prompts);
+const methods: { [name: string]: any }[] = Object.entries(prompts);
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
@@ -54,13 +54,23 @@ export default function Home() {
   );
   const [page, setPage] = useState(1);
   const [pageRange, setPageRange] = useState([0, 10]);
-  const [method, setMethod] = useState(prompts.direct(""));
+  const [question, setQuestion] = useState("");
+  // const [method, setMethod] = useState(prompts.direct(question));
+  const { direct, multistep, label, contract, ensemble } = prompts;
 
-  // TODO method selector
+  const [method, setMethod] = useState(direct(question));
+
+  console.log(methods);
+
   // TODO aot algorithm
   // TODO copy text or insert text +
   // TODO fix pagination
   // TODO compact display of questions
+  // TODO insert question into method template +
+
+  useEffect(() => {
+    setPrompt(prompts.direct(question));
+  }, [question]);
 
   return (
     <>
@@ -71,74 +81,6 @@ export default function Home() {
       </Head>
       <main className="my-10 flex min-h-screen flex-col items-center justify-center">
         <div className="container grid max-w-2/3 justify-start">
-          <div className="flex gap-3">
-            {methods.map((data, index) => {
-              return (
-                <Button
-                  key={index}
-                  className="cursor-pointer"
-                  onClick={() => setMethod(data[1](""))}
-                >
-                  {data[0]}
-                </Button>
-              );
-            })}
-          </div>
-          <div className="relative my-5 flex gap-2.5">
-            {method}
-            <Button
-              variant="outline"
-              className="cursor-pointer justify-self-end p-1"
-              onClick={() => setPrompt(method)}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                className="lucide lucide-clipboard"
-              >
-                <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
-                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-              </svg>
-            </Button>
-          </div>
-          <div className="container grid justify-items-start">
-            <Textarea
-              className="mb-6"
-              rows={10}
-              onChange={(event) => setPrompt(event.target.value)}
-              value={prompt}
-            />
-            <Button
-              className="cursor-pointer px-7 py-1"
-              disabled={loading}
-              onClick={async () => {
-                setLoading(true);
-                setError(false);
-                setResult("");
-                try {
-                  const stream = await llm.stream(prompt);
-                  for await (const chunk of stream) {
-                    setResult((prev) => `${prev} ${chunk.content}`); // Print each chunk as it arrives
-                  }
-                } catch (error) {
-                  setError(true);
-                  console.log(error);
-                }
-                setLoading(false);
-              }}
-            >
-              Generate
-            </Button>
-            {error ? "Error occurred" : ""}
-            <div>{String(result ?? "")}</div>
-          </div>
           <ul className="my-5 flex justify-start gap-2.5">
             {tests.map((data, index) => {
               return (
@@ -170,7 +112,7 @@ export default function Home() {
                         <Button
                           variant="outline"
                           className="cursor-pointer justify-self-end p-1"
-                          onClick={() => setPrompt(data?.input)}
+                          onClick={() => setQuestion(data?.input)}
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -265,6 +207,37 @@ export default function Home() {
               </PaginationItem>
             </PaginationContent>
           </Pagination>
+          <div className="container grid justify-items-start">
+            <Textarea
+              className="mb-6"
+              rows={10}
+              onChange={(event) => setPrompt(event.target.value)}
+              value={prompt}
+            />
+            <Button
+              className="cursor-pointer px-7 py-1"
+              disabled={loading}
+              onClick={async () => {
+                setLoading(true);
+                setError(false);
+                setResult("");
+                try {
+                  const stream = await llm.stream(prompt);
+                  for await (const chunk of stream) {
+                    setResult((prev) => `${prev} ${chunk.content}`); // Print each chunk as it arrives
+                  }
+                } catch (error) {
+                  setError(true);
+                  console.log(error);
+                }
+                setLoading(false);
+              }}
+            >
+              Generate
+            </Button>
+            {error ? "Error occurred" : ""}
+            <div>{String(result ?? "")}</div>
+          </div>
         </div>
       </main>
     </>
