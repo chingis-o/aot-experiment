@@ -31,7 +31,6 @@ interface Test {
   dataset: any[];
 }
 
-
 // TODO handle various dataset schemas
 const tests: Test[] = [
   { name: "bbh", dataset: bbh },
@@ -57,9 +56,9 @@ export default function Home() {
   const [pageRange, setPageRange] = useState([0, 10]);
   const [method, setMethod] = useState(prompts.direct(""));
 
-  // method selector
-  // aot algoritm 
-  // TODO copy text or insert text
+  // TODO method selector
+  // TODO aot algorithm
+  // TODO copy text or insert text +
   // TODO fix pagination
   // TODO compact display of questions
 
@@ -85,7 +84,30 @@ export default function Home() {
               );
             })}
           </div>
-          <div className="my-5 grid justify-start gap-2.5">{method}</div>
+          <div className="relative my-5 flex gap-2.5">
+            {method}
+            <Button
+              variant="outline"
+              className="cursor-pointer justify-self-end p-1"
+              onClick={() => setPrompt(method)}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                className="lucide lucide-clipboard"
+              >
+                <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              </svg>
+            </Button>
+          </div>
           <div className="container grid justify-items-start">
             <Textarea
               className="mb-6"
@@ -140,11 +162,39 @@ export default function Home() {
               ? dataset.slice(0, 10).map((data, index) => {
                   return (
                     <>
-                      <li key={index}>
+                      <li key={index} className="flex gap-2.5">
                         {index + 1} ) {data && data?.input}
                         {data && data?.question}
                         {data && data?.Question}
                         {data && data?.problem}
+                        <Button
+                          variant="outline"
+                          className="cursor-pointer justify-self-end p-1"
+                          onClick={() => setPrompt(data?.input)}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            className="lucide lucide-clipboard"
+                          >
+                            <rect
+                              width="8"
+                              height="4"
+                              x="8"
+                              y="2"
+                              rx="1"
+                              ry="1"
+                            ></rect>
+                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                          </svg>
+                        </Button>
                       </li>
                       <hr />
                       <li key={index}>
