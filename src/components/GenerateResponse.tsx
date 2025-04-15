@@ -1,10 +1,10 @@
 import type { MessageContent } from "@langchain/core/messages";
 import React, { useEffect, useState } from "react";
-
-import prompts from "../prompts/examples";
 import { ChatOllama } from "@langchain/ollama";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
+
+import prompts from "../prompts/examples";
 
 const llm = new ChatOllama({
   model: "deepseek-r1:7b",
@@ -147,16 +147,12 @@ export default function GenerateResponse({ question }: { question: string }) {
       >
         Generate
       </Button>
-      <Button
-        onClick={() => {
-          const finalAnswer = atomOfThoughts(question);
-          setResult(finalAnswer);
-        }}
-      ></Button>
       {error ? "Error occurred" : ""}
-      <div className="my-4 w-full rounded-md border-2 border-blue-500 px-3 py-2">
-        {String(result ?? "")}
-      </div>
+      {result && (
+        <div className="my-4 w-full rounded-md border-2 border-blue-500 px-3 py-2">
+          {String(result)}
+        </div>
+      )}
     </div>
   );
 }

@@ -6,14 +6,9 @@ export default function Question({ data }: { data: any }) {
     <>
       <li className="flex gap-2.5">{`1 ) ${data && data?.question}`}</li>
       <hr />
-      <li>
-        Correct answer: {data && data?.target}
-        {data && data?.answer}
-        {data && data?.problem}
-        {data && data?.Answer}
-      </li>
+      <li>{`Correct answer: ${data && data?.answer}`}</li>
       <hr />
-      <GenerateResponse question={data?.input} />
+      <GenerateResponse question={data?.question} />
     </>
   );
 }
