@@ -1,3 +1,16 @@
+import type { MessageContent } from "@langchain/core/messages";
+import React, { useEffect, useState } from "react";
+
+import prompts from "../prompts/examples";
+import { ChatOllama } from "@langchain/ollama";
+import { Textarea } from "./ui/textarea";
+import { Button } from "./ui/button";
+
+const llm = new ChatOllama({
+  model: "deepseek-r1:7b",
+  temperature: 0,
+});
+
 type Subquestion = {
   description: string;
   answer?: string;
@@ -12,6 +25,9 @@ type DAG = {
 // Decompose the current question into a dependency-based DAG
 const decompose = (question: string): DAG => {
   // Simulate LLM invocation to generate subquestions and dependencies
+  const { label } = prompts;
+  label(question);
+
   const subquestions: Subquestion[] = [
     { description: "What are the known values?", depend: [] },
     { description: "Find cos B using sin B.", depend: [0] },
@@ -88,8 +104,59 @@ const atomOfThoughts = (initialQuestion: string): string => {
   return iterate(initialQuestion, 0, null);
 };
 
-// Example usage
-const initialQuestion =
-  "For a given constant b > 10, there are two possible triangles ABC satisfying AB = 10, AC = b, and sin B = 3/5. Find the positive difference between the lengths of side BC.";
-const finalAnswer = atomOfThoughts(initialQuestion);
-console.log("Final Answer:", finalAnswer);
+export default function GenerateResponse({ question }: { question: string }) {
+  const [prompt, setPrompt] = useState("");
+  const [result, setResult] = useState<MessageContent>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const { label } = prompts;
+
+  useEffect(() => {
+    // setPrompt(direct(question));
+    setPrompt(label(question));
+  }, [question]);
+
+  async function generate() {
+    setLoading(true);
+    setError(false);
+    setResult("");
+    try {
+      const stream = await llm.stream(prompt);
+      for await (const chunk of stream) {
+        setResult((prev) => `${prev} ${chunk.content}`);
+      }
+    } catch (error) {
+      setError(true);
+      console.log(error);
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div className="container grid justify-items-start">
+      <Textarea
+        className="mb-6"
+        rows={10}
+        onChange={(event) => setPrompt(event.target.value)}
+        value={prompt}
+      />
+      <Button
+        className="cursor-pointer px-7 py-1"
+        disabled={loading}
+        onClick={generate}
+      >
+        Generate
+      </Button>
+      <Button
+        onClick={() => {
+          const finalAnswer = atomOfThoughts(question);
+          setResult(finalAnswer);
+        }}
+      ></Button>
+      {error ? "Error occurred" : ""}
+      <div className="my-4 w-full rounded-md border-2 border-blue-500 px-3 py-2">
+        {String(result ?? "")}
+      </div>
+    </div>
+  );
+}
