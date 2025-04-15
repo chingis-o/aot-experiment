@@ -18,11 +18,10 @@ function multistep(question?: string) {
     You can freely reason in your response, but please enclose the final answer within <answer></answer> tags (pure number without units and explanations)`;
 }
 
-function label(question?: string, trajectory?: string, answer?: string) {
+function label(question: string) {
   return `You are tasked with breaking down a math problem reasoning process into sub-questions.
 
     Original Question: ${question}
-    Complete Reasoning Process: ${trajectory}
 
     Instructions:
     1. Break down the reasoning process into a series of sub-questions
@@ -35,6 +34,7 @@ function label(question?: string, trajectory?: string, answer?: string) {
         - MUST come from the answers of previous sub-questions
 
     Format your response as the following JSON object:
+    <json?
     {{
         "sub-questions": [
             {{
@@ -44,8 +44,8 @@ function label(question?: string, trajectory?: string, answer?: string) {
             }},
             ...
         ],
-        "answer": ${answer}
-    }}`;
+    }}
+    </json>`;
 }
 
 function contract(
