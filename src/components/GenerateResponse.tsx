@@ -109,6 +109,7 @@ export default function GenerateResponse({ question }: { question: string }) {
   const [result, setResult] = useState<MessageContent>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  // const [subquestions, setSubquestions] = useState([]);
   const { label } = prompts;
 
   useEffect(() => {
@@ -147,7 +148,24 @@ export default function GenerateResponse({ question }: { question: string }) {
 
     const jsonContent = jsonMatch[1];
 
-    console.log(JSON.parse(jsonContent ?? ""));
+    function formatSubquestions(input: any): Subquestion[] {
+      return input[" sub Questions "].map((value: any) => {
+        return {
+          description: value[" description "].trim(),
+          depend: value[" depend "],
+        };
+      });
+    }
+
+    const subquestions = formatSubquestions(JSON.parse(jsonContent ?? ""));
+
+    const edges: [number, number][] = subquestions.flatMap((node, index) =>
+      node.depend.map((depIndex) => [depIndex, index] as [number, number]),
+    );
+
+    console.log({ nodes: subquestions, edges });
+
+    return { nodes: subquestions, edges };
   }
 
   return (
@@ -164,6 +182,15 @@ export default function GenerateResponse({ question }: { question: string }) {
         onClick={generate}
       >
         Generate
+      </Button>
+      <Button
+        className="cursor-pointer px-7 py-1"
+        disabled={loading}
+        onClick={() => {
+          parse("");
+        }}
+      >
+        check
       </Button>
       {error ? "Error occurred" : ""}
       {result && (
