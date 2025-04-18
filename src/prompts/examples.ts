@@ -45,6 +45,40 @@ function label(question: string) {
     }}`;
 }
 
+function solve(original: string, subQuestion: string) {
+  return `You are a math problem solver specializing in optimizing step-by-step reasoning processes. Your task is to optimize the existing reasoning trajectory into a more efficient, single self-contained question.
+        
+    For the original question: ${original}
+        
+    Solve this subquestion:
+    ${subQuestion} `;
+}
+
+function contract1(
+  question?: string,
+  response?: string,
+  sub_questions?: string,
+  independent?: string,
+) {
+  return `You are a math problem solver specializing in optimizing step-by-step reasoning processes. Your task is to optimize the existing reasoning trajectory into a more efficient, single self-contained question.
+        
+    For the original question: ${question}
+        
+    Here are step-by-step reasoning process:
+    ${response}
+        
+    ${sub_questions}
+        
+    Here are explanations of key concepts:
+    1. self-contained: The optimized question must be solvable independently, without relying on any external information
+    2. efficient: The optimized question must be simpler than the original, requiring fewer reasoning steps (these steps are reduced because some solved independent sub-problems become known conditions in the optimized question or are excluded as incorrect explorations)
+        
+    You can freely reason in your response, but please enclose the your optimized question within <question></question> tags
+
+    The following sub-questions and their answers can serve as known conditions:
+    ${independent}`;
+}
+
 function contract(
   question?: string,
   response?: string,
@@ -93,6 +127,8 @@ const prompt = {
   label,
   contract,
   ensemble,
+  solve,
+  contract1,
 };
 
 export default prompt;

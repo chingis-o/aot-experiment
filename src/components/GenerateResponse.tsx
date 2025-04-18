@@ -1,16 +1,9 @@
-import type { MessageContent } from "@langchain/core/messages";
 import React, { useEffect, useState } from "react";
-import { ChatOllama } from "@langchain/ollama";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
-
-import prompts from "../prompts/examples";
 import { useLllm } from "~/hooks/llm.hook";
 
-const llm = new ChatOllama({
-  model: "deepseek-r1:7b",
-  temperature: 0,
-});
+import prompts from "../prompts/examples";
 
 type Subquestion = {
   description: string;
@@ -23,53 +16,16 @@ type DAG = {
   edges: [number, number][]; // Dependency edges between subquestions
 };
 
-// Categorize subquestions into independent and dependent
-function categorizeSubquestions(dag: DAG | undefined): {
-  independent: Subquestion[];
-  dependent: Subquestion[];
-} {
-  if (dag) {
-    return {
-      independent: dag.nodes.filter((node) => node.depend.length === 0),
-      dependent: dag.nodes.filter((node) => node.depend.length > 0),
-    };
-  }
-
-  return {
-    independent: [],
-    dependent: [],
-  };
-}
-
-// Contract the DAG into a new independent question
-const contract = (
-  independent: Subquestion[],
-  dependent: Subquestion[],
-): string => {
-  const knownConditions = independent
-    .map((q) => `${q.description}: ${q.answer}`)
-    .join(", ");
-  const newQuestion = `Given ${knownConditions}, solve: ${dependent.map((q) => q.description).join(", ")}`;
-  return newQuestion;
-};
-
-// Evaluate whether the algorithm should terminate
-const shouldTerminate = (currentQuestion: string): boolean =>
-  currentQuestion.includes("final answer");
-
-// Solve the final contracted question
-const solveFinalQuestion = (finalQuestion: string): string =>
-  `<answer>${finalQuestion.split(":").pop()}</answer>`;
-
 export default function GenerateResponse({ question }: { question: string }) {
   const [prompt, setPrompt] = useState("");
+  const [updatedQuestion, setUpdatedQuestion] = useState(question);
   const [subquestions, setSubquestions] = useState<DAG>();
-  const { generate, current, result, loading, error, abort } = useLllm({
+  const { generate, result, loading, error, abort } = useLllm({
     prompt,
   });
-  const { label } = prompts;
+  const { label, solve } = prompts;
 
-  console.log(subquestions);
+  console.log(updatedQuestion);
 
   useEffect(() => {
     setPrompt(label(question));
@@ -81,11 +37,7 @@ export default function GenerateResponse({ question }: { question: string }) {
     }
   }, [result]);
 
-  console.log(result);
-
   function parse(plainText: string): DAG | undefined {
-    // const plainText = localStorage.getItem("text") ?? "";
-
     const jsonBlockRegex = /``` json\s*({[\s\S]*?})\s* ```/;
     const jsonMatch = plainText.match(jsonBlockRegex);
 
@@ -111,9 +63,46 @@ export default function GenerateResponse({ question }: { question: string }) {
       node.depend.map((depIndex) => [depIndex, index] as [number, number]),
     );
 
-    console.log({ nodes: subquestions, edges });
-
     return { nodes: subquestions, edges };
+  }
+
+  function Subquestion({
+    subquestion,
+    updatedQuestion,
+    setUpdatedQuestion,
+  }: {
+    subquestion: string;
+    updatedQuestion: string;
+    setUpdatedQuestion: any;
+  }) {
+    console.log(subquestion);
+    console.log(updatedQuestion);
+    const { generate, result, loading, error, abort } = useLllm({
+      prompt: solve(updatedQuestion, subquestion),
+    });
+
+    // useEffect(() => {
+    //   setUpdatedQuestion(result);
+    // }, [result]);
+
+    return (
+      <div>
+        <div>{subquestion}</div>
+        <Button
+          className="my-2 cursor-pointer px-7 py-1"
+          disabled={loading}
+          onClick={generate}
+        >
+          Generate
+        </Button>
+        {error ? "Error occurred" : ""}
+        {result && (
+          <div className="my-4 w-full rounded-md border-2 border-blue-500 px-3 py-2">
+            {String(result)}
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -148,21 +137,26 @@ export default function GenerateResponse({ question }: { question: string }) {
         check
       </Button> */}
       {error ? "Error occurred" : ""}
-      {current && (
+      {result && (
         <div className="my-4 w-full rounded-md border-2 border-blue-500 px-3 py-2">
-          {String(current)}
+          {String(result)}
         </div>
       )}
 
-      {/* {Array.isArray(subquestions?.nodes) ? (
+      {Array.isArray(subquestions?.nodes) ? (
         <ul>
-          {subquestions.nodes((subquestions: any) => {
+          {subquestions.nodes.map((subquestions: any) => {
             return (
-              <li key={subquestions.description}>{subquestions.description}</li>
+              <Subquestion
+                key={subquestions.description}
+                updatedQuestion={updatedQuestion}
+                setUpdatedQuestion={setUpdatedQuestion}
+                subquestion={subquestions.description}
+              />
             );
           })}
         </ul>
-      ) : null} */}
+      ) : null}
     </div>
   );
 }
