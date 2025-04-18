@@ -23,7 +23,7 @@ export default function GenerateResponse({ question }: { question: string }) {
   const { generate, result, loading, error, abort } = useLllm({
     prompt,
   });
-  const { label, solve } = prompts;
+  const { label, solve, contract1 } = prompts;
 
   console.log(updatedQuestion);
 
@@ -81,9 +81,11 @@ export default function GenerateResponse({ question }: { question: string }) {
       prompt: solve(updatedQuestion, subquestion),
     });
 
-    // useEffect(() => {
-    //   setUpdatedQuestion(result);
-    // }, [result]);
+    useEffect(() => {
+      if (!loading && result) {
+        setUpdatedQuestion(result);
+      }
+    }, [result]);
 
     return (
       <div>
@@ -93,7 +95,48 @@ export default function GenerateResponse({ question }: { question: string }) {
           disabled={loading}
           onClick={generate}
         >
-          Generate
+          Solve
+        </Button>
+        {error ? "Error occurred" : ""}
+        {result && (
+          <div className="my-4 w-full rounded-md border-2 border-blue-500 px-3 py-2">
+            {String(result)}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function Contract({
+    subquestion,
+    updatedQuestion,
+    setUpdatedQuestion,
+  }: {
+    subquestion: string;
+    updatedQuestion: string;
+    setUpdatedQuestion: any;
+  }) {
+    console.log(subquestion);
+    console.log(updatedQuestion);
+    const { generate, result, loading, error, abort } = useLllm({
+      prompt: contract1(updatedQuestion, subquestion),
+    });
+
+    useEffect(() => {
+      if (!loading && result) {
+        setUpdatedQuestion(result);
+      }
+    }, [result]);
+
+    return (
+      <div>
+        <div>{subquestion}</div>
+        <Button
+          className="my-2 cursor-pointer px-7 py-1"
+          disabled={loading}
+          onClick={generate}
+        >
+          Contract
         </Button>
         {error ? "Error occurred" : ""}
         {result && (
