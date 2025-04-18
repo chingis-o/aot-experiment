@@ -5,6 +5,7 @@ import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
 
 import prompts from "../prompts/examples";
+import { useLllm } from "~/hooks/llm.hook";
 
 const llm = new ChatOllama({
   model: "deepseek-r1:7b",
@@ -22,32 +23,23 @@ type DAG = {
   edges: [number, number][]; // Dependency edges between subquestions
 };
 
-// Decompose the current question into a dependency-based DAG
-const decompose = (question: string): DAG => {
-  // Simulate LLM invocation to generate subquestions and dependencies
-  const { label } = prompts;
-  label(question);
-
-  const subquestions: Subquestion[] = [
-    { description: "What are the known values?", depend: [] },
-    { description: "Find cos B using sin B.", depend: [0] },
-    { description: "Use the Law of Cosines to find BC.", depend: [1] },
-  ];
-
-  const edges: [number, number][] = subquestions.flatMap((node, index) =>
-    node.depend.map((depIndex) => [depIndex, index] as [number, number]),
-  );
-
-  return { nodes: subquestions, edges };
-};
-
 // Categorize subquestions into independent and dependent
-const categorizeSubquestions = (
-  dag: DAG,
-): { independent: Subquestion[]; dependent: Subquestion[] } => ({
-  independent: dag.nodes.filter((node) => node.depend.length === 0),
-  dependent: dag.nodes.filter((node) => node.depend.length > 0),
-});
+function categorizeSubquestions(dag: DAG | undefined): {
+  independent: Subquestion[];
+  dependent: Subquestion[];
+} {
+  if (dag) {
+    return {
+      independent: dag.nodes.filter((node) => node.depend.length === 0),
+      dependent: dag.nodes.filter((node) => node.depend.length > 0),
+    };
+  }
+
+  return {
+    independent: [],
+    dependent: [],
+  };
+}
 
 // Contract the DAG into a new independent question
 const contract = (
@@ -69,73 +61,29 @@ const shouldTerminate = (currentQuestion: string): boolean =>
 const solveFinalQuestion = (finalQuestion: string): string =>
   `<answer>${finalQuestion.split(":").pop()}</answer>`;
 
-// Main AOT function implemented in a functional style
-const atomOfThoughts = (initialQuestion: string): string => {
-  const iterate = (
-    question: string,
-    iteration: number,
-    maxDepth: number | null,
-  ): string => {
-    if (maxDepth !== null && iteration >= maxDepth) {
-      return solveFinalQuestion(question);
-    }
-
-    // Step 1: Decompose the current question into a DAG
-    const dag = decompose(question);
-
-    // Determine the maximum depth if not already set
-    const updatedMaxDepth = maxDepth ?? dag.nodes.length;
-
-    // Step 2: Categorize subquestions
-    const { independent, dependent } = categorizeSubquestions(dag);
-
-    // Step 3: Contract the DAG into a new independent question
-    const nextQuestion = contract(independent, dependent);
-
-    // Termination check
-    if (shouldTerminate(nextQuestion)) {
-      return solveFinalQuestion(nextQuestion);
-    }
-
-    // Recursive call for the next iteration
-    return iterate(nextQuestion, iteration + 1, updatedMaxDepth);
-  };
-
-  return iterate(initialQuestion, 0, null);
-};
-
 export default function GenerateResponse({ question }: { question: string }) {
   const [prompt, setPrompt] = useState("");
-  const [result, setResult] = useState<MessageContent>();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
-  // const [subquestions, setSubquestions] = useState([]);
+  const [subquestions, setSubquestions] = useState<DAG>();
+  const { generate, current, result, loading, error, abort } = useLllm({
+    prompt,
+  });
   const { label } = prompts;
 
+  console.log(subquestions);
+
   useEffect(() => {
-    // setPrompt(direct(question));
     setPrompt(label(question));
   }, [question]);
 
-  async function generate() {
-    setLoading(true);
-    setError(false);
-    setResult("");
-    try {
-      const stream = await llm.stream(prompt);
-      for await (const chunk of stream) {
-        setResult((prev) => `${prev} ${chunk.content}`);
-      }
-      parse(result as string);
-    } catch (error) {
-      setError(true);
-      console.log(error);
+  useEffect(() => {
+    if (result) {
+      setSubquestions(parse(result as string));
     }
+  }, [result]);
 
-    setLoading(false);
-  }
+  console.log(result);
 
-  function parse(plainText: string) {
+  function parse(plainText: string): DAG | undefined {
     // const plainText = localStorage.getItem("text") ?? "";
 
     const jsonBlockRegex = /``` json\s*({[\s\S]*?})\s* ```/;
@@ -143,7 +91,7 @@ export default function GenerateResponse({ question }: { question: string }) {
 
     if (!jsonMatch) {
       console.log("JSON block not found in the input.");
-      return 0;
+      return undefined;
     }
 
     const jsonContent = jsonMatch[1];
@@ -177,27 +125,44 @@ export default function GenerateResponse({ question }: { question: string }) {
         value={prompt}
       />
       <Button
-        className="cursor-pointer px-7 py-1"
+        className="my-2 cursor-pointer px-7 py-1"
         disabled={loading}
         onClick={generate}
       >
         Generate
       </Button>
       <Button
-        className="cursor-pointer px-7 py-1"
+        className="my-2 cursor-pointer px-7 py-1"
+        onClick={() => abort()}
+        type="reset"
+      >
+        Cancel
+      </Button>
+      {/* <Button
+        className="my-2 cursor-pointer px-7 py-1"
         disabled={loading}
         onClick={() => {
           parse("");
         }}
       >
         check
-      </Button>
+      </Button> */}
       {error ? "Error occurred" : ""}
-      {result && (
+      {current && (
         <div className="my-4 w-full rounded-md border-2 border-blue-500 px-3 py-2">
-          {String(result)}
+          {String(current)}
         </div>
       )}
+
+      {/* {Array.isArray(subquestions?.nodes) ? (
+        <ul>
+          {subquestions.nodes((subquestions: any) => {
+            return (
+              <li key={subquestions.description}>{subquestions.description}</li>
+            );
+          })}
+        </ul>
+      ) : null} */}
     </div>
   );
 }
