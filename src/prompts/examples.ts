@@ -34,18 +34,15 @@ function label(question: string) {
         - MUST come from the answers of previous sub-questions
 
     Format your response as the following JSON object:
-    <json?
     {{
-        "sub-questions": [
+        "subQuestions": [
             {{
                 "description": "<clear interrogative question>",
-                "answer": <numerical value without units>,
                 "depend": [<indices of prerequisite sub-questions>]
             }},
             ...
         ],
-    }}
-    </json>`;
+    }}`;
 }
 
 function contract(

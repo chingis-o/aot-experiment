@@ -125,11 +125,29 @@ export default function GenerateResponse({ question }: { question: string }) {
       for await (const chunk of stream) {
         setResult((prev) => `${prev} ${chunk.content}`);
       }
+      parse(result as string);
     } catch (error) {
       setError(true);
       console.log(error);
     }
+
     setLoading(false);
+  }
+
+  function parse(plainText: string) {
+    // const plainText = localStorage.getItem("text") ?? "";
+
+    const jsonBlockRegex = /``` json\s*({[\s\S]*?})\s* ```/;
+    const jsonMatch = plainText.match(jsonBlockRegex);
+
+    if (!jsonMatch) {
+      console.log("JSON block not found in the input.");
+      return 0;
+    }
+
+    const jsonContent = jsonMatch[1];
+
+    console.log(JSON.parse(jsonContent ?? ""));
   }
 
   return (
