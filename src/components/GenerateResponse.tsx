@@ -76,7 +76,7 @@ export default function GenerateResponse({ question }: { question: string }) {
     setUpdatedQuestion: any;
   }) {
     console.log(subquestion);
-    console.log('updatedQuestion');
+    console.log("updatedQuestion");
     console.log(solve(updatedQuestion, subquestion));
     const { generate, result, loading, error, abort } = useLllm({
       prompt: solve(updatedQuestion, subquestion),
@@ -182,7 +182,7 @@ export default function GenerateResponse({ question }: { question: string }) {
       </Button> */}
       {error ? "Error occurred" : ""}
       {result && (
-        <div className="my-4 w-full rounded-md border-2 border-blue-500 px-3 py-2">
+        <div className="my-4 w-full rounded-md border-2 border-blue-500 px-3 py-2 whitespace-pre-line">
           {String(result)}
         </div>
       )}
