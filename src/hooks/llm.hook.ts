@@ -26,7 +26,7 @@ export function useLllm({ prompt }: { prompt: string }) {
       });
 
       for await (const chunk of stream) {
-        setResult((prev) => `${prev} ${chunk.content}`);
+        setResult((prev) => `${prev}${chunk.content}`);
       }
     } catch (error) {
       setError(true);
