@@ -76,16 +76,17 @@ export default function GenerateResponse({ question }: { question: string }) {
     setUpdatedQuestion: any;
   }) {
     console.log(subquestion);
-    console.log(updatedQuestion);
+    console.log('updatedQuestion');
+    console.log(solve(updatedQuestion, subquestion));
     const { generate, result, loading, error, abort } = useLllm({
       prompt: solve(updatedQuestion, subquestion),
     });
 
-    useEffect(() => {
-      if (!loading && result) {
-        setUpdatedQuestion(result);
-      }
-    }, [result]);
+    // useEffect(() => {
+    //   if (!loading && result) {
+    //     setUpdatedQuestion(result);
+    //   }
+    // }, [result]);
 
     return (
       <div>
