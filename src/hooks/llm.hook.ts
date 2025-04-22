@@ -15,7 +15,6 @@ export function useLllm({ prompt }: { prompt: string }) {
   const [error, setError] = useState(false);
 
   async function generate() {
-    console.log("call");
     setLoading(true);
     setError(false);
     setResult("");

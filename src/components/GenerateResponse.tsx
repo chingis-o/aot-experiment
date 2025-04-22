@@ -31,8 +31,6 @@ export default function GenerateResponse({ question }: { question: string }) {
   });
   const { label, solve, contract1 } = prompts;
 
-  console.log(updatedQuestion);
-
   useEffect(() => {
     setPrompt(label(question));
   }, [question]);
@@ -48,7 +46,6 @@ export default function GenerateResponse({ question }: { question: string }) {
     const jsonMatch = plainText.match(jsonBlockRegex);
 
     if (!jsonMatch) {
-      console.log("JSON block not found in the input.");
       return undefined;
     }
 
@@ -81,9 +78,6 @@ export default function GenerateResponse({ question }: { question: string }) {
     updatedQuestion: string;
     setUpdatedQuestion: any;
   }) {
-    console.log(subquestion);
-    console.log("updatedQuestion");
-    console.log(solve(updatedQuestion, subquestion));
     const { generate, result, loading, error, abort } = useLllm({
       prompt: solve(updatedQuestion, subquestion),
     });
@@ -123,8 +117,6 @@ export default function GenerateResponse({ question }: { question: string }) {
     updatedQuestion: string;
     setUpdatedQuestion: any;
   }) {
-    console.log(subquestion);
-    console.log(updatedQuestion);
     const { generate, result, loading, error, abort } = useLllm({
       prompt: contract1(updatedQuestion, subquestion),
     });
@@ -153,6 +145,16 @@ export default function GenerateResponse({ question }: { question: string }) {
         )}
       </div>
     );
+  }
+
+  function handleThinkTag(text: string) {
+    const matchBetweenTags = text.match(/<think>(.*?)<\/think>/i);
+    const matchAfterTags = text.match(/<\/think>(.*)/i);
+
+    return {
+      thinking: matchBetweenTags ? matchBetweenTags[1] : "",
+      result: matchAfterTags ? matchAfterTags[1] : "",
+    };
   }
 
   return (
@@ -207,10 +209,21 @@ export default function GenerateResponse({ question }: { question: string }) {
             Thinking completed
           </AccordionTrigger>
           <AccordionContent className="p-1.5 text-[#8f91a8]">
-            {"<think> </think> Hello! How can I assist you today? 😊"}
+            {
+              handleThinkTag(
+                "<think>Tought process</think> Hello! How can I assist you today? 😊",
+              ).thinking
+            }
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+      <div>
+        {
+          handleThinkTag(
+            "<think>Tought process</think> Hello! How can I assist you today? 😊",
+          ).result
+        }
+      </div>
       {Array.isArray(subquestions?.nodes) ? (
         <ul>
           {subquestions.nodes.map((subquestions: any) => {
