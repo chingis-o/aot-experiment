@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/accordion";
 import Result from "./Result";
 import Cascade from "./Cascade";
-import { type DAG } from "@/utils/parseDag";
+import { parseDag, type DAG } from "@/utils/parseDag";
 
 import prompts from "../prompts/examples";
 
@@ -19,10 +19,12 @@ const { label } = prompts;
 export default function GenerateResponse({ question }: { question: string }) {
   const [prompt, setPrompt] = useState(label(question));
   const [subquestions, setSubquestions] = useState<DAG>();
-  const { generate, result, loading, error, abort } = useLllm({
-    prompt,
-    setSubquestions,
-  });
+  const { generate, result, loading, error, abort } = useLllm();
+
+  async function handleClick() {
+    const result = await generate(prompt);
+    setSubquestions(parseDag(result as string));
+  }
 
   return (
     <div className="container grid justify-items-start">
@@ -35,7 +37,7 @@ export default function GenerateResponse({ question }: { question: string }) {
       <Button
         className="my-2 cursor-pointer px-7 py-1"
         disabled={loading}
-        onClick={generate}
+        onClick={handleClick}
       >
         Generate
       </Button>

@@ -11,20 +11,12 @@ const llm = new ChatOllama({
 
 const abortController = new AbortController();
 
-export function useLllm({
-  prompt,
-  setSubquestions,
-  setUpdatedQuestion,
-}: {
-  prompt: string;
-  setSubquestions?: React.Dispatch<React.SetStateAction<DAG | undefined>>;
-  setUpdatedQuestion?: any;
-}) {
+export function useLllm() {
   const [result, setResult] = useState<MessageContent>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
-  async function generate() {
+  async function generate(prompt: string) {
     setLoading(true);
     setError(false);
     setResult("");
@@ -38,13 +30,7 @@ export function useLllm({
         setResult((prev) => `${prev}${chunk.content}`);
       }
 
-      if (setSubquestions) {
-        setSubquestions(parseDag(result as string));
-      }
-
-      if (setUpdatedQuestion) {
-        setUpdatedQuestion(handleThinkTag(result as string).result);
-      }
+      return result;
     } catch (error) {
       setError(true);
       console.log(error);
