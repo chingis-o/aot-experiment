@@ -8,77 +8,21 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import Result from "./Result";
+import Cascade from "./Cascade";
 import { type DAG } from "@/utils/parseDag";
 
 import prompts from "../prompts/examples";
-import Result from "./Result";
-import QuestionBlock from "./QuestionBlock";
 
-const { label, solve, contract1 } = prompts;
+const { label } = prompts;
 
 export default function GenerateResponse({ question }: { question: string }) {
   const [prompt, setPrompt] = useState(label(question));
-  const [updatedQuestion, setUpdatedQuestion] = useState(question);
   const [subquestions, setSubquestions] = useState<DAG>();
   const { generate, result, loading, error, abort } = useLllm({
     prompt,
     setSubquestions,
   });
-
-  function Subquestion({
-    subquestion,
-    updatedQuestion,
-    setUpdatedQuestion,
-  }: {
-    subquestion: string;
-    updatedQuestion: string;
-    setUpdatedQuestion: any;
-  }) {
-    const { generate, result, loading, error, abort } = useLllm({
-      prompt: solve(updatedQuestion, subquestion),
-    });
-
-    return (
-      <div className="my-3 w-full">
-        <QuestionBlock
-          question={subquestion}
-          loading={loading}
-          generate={generate}
-          abort={abort}
-          error={error}
-          result={result}
-        />
-        <Contract />
-      </div>
-    );
-  }
-
-  function Contract({
-    subquestion,
-    updatedQuestion,
-    setUpdatedQuestion,
-  }: {
-    subquestion?: string;
-    updatedQuestion?: string;
-    setUpdatedQuestion?: any;
-  }) {
-    const { generate, result, loading, error, abort } = useLllm({
-      prompt: contract1(updatedQuestion, subquestion),
-    });
-
-    return (
-      <div>
-        <QuestionBlock
-          question={subquestion ?? ""}
-          loading={loading}
-          generate={generate}
-          abort={abort}
-          error={error}
-          result={result}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="container grid justify-items-start">
@@ -112,32 +56,7 @@ export default function GenerateResponse({ question }: { question: string }) {
         </Accordion>
       )}
       <Result result="<think>Tought process</think> Hello! How can I assist you today? 😊" />
-      {[{ description: "A" }, { description: "B" }, { description: "C" }].map(
-        (subquestions: any) => {
-          return (
-            <Subquestion
-              key={subquestions.description}
-              updatedQuestion={updatedQuestion}
-              setUpdatedQuestion={setUpdatedQuestion}
-              subquestion={subquestions.description}
-            />
-          );
-        },
-      )}
-      {Array.isArray(subquestions?.nodes) ? (
-        <ul>
-          {subquestions.nodes.map((subquestions: any) => {
-            return (
-              <Subquestion
-                key={subquestions.description}
-                updatedQuestion={updatedQuestion}
-                setUpdatedQuestion={setUpdatedQuestion}
-                subquestion={subquestions.description}
-              />
-            );
-          })}
-        </ul>
-      ) : null}
+      <Cascade question={question} subquestions={subquestions} />
     </div>
   );
 }
