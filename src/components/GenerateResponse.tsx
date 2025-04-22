@@ -2,6 +2,12 @@ import React, { useEffect, useState } from "react";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
 import { useLllm } from "~/hooks/llm.hook";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 import prompts from "../prompts/examples";
 
@@ -181,12 +187,30 @@ export default function GenerateResponse({ question }: { question: string }) {
         check
       </Button> */}
       {error ? "Error occurred" : ""}
-      {result && (
-        <div className="my-4 w-full rounded-md border-2 border-blue-500 px-3 py-2 whitespace-pre-line">
-          {String(result)}
-        </div>
-      )}
 
+      {result && (
+        <Accordion type="single" collapsible>
+          <AccordionItem value="item-1">
+            <AccordionTrigger>Is it accessible?</AccordionTrigger>
+            <AccordionContent>{String(result)}</AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      )}
+      <Accordion
+        type="single"
+        className="my-2 w-full"
+        collapsible
+        defaultValue="item-1"
+      >
+        <AccordionItem value="item-1">
+          <AccordionTrigger className="mb-1.5 bg-[#f7f8fc] px-2.5 py-2 font-medium">
+            Thinking completed
+          </AccordionTrigger>
+          <AccordionContent className="p-1.5 text-[#8f91a8]">
+            {"<think> </think> Hello! How can I assist you today? 😊"}
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
       {Array.isArray(subquestions?.nodes) ? (
         <ul>
           {subquestions.nodes.map((subquestions: any) => {
