@@ -1,6 +1,7 @@
 import type { MessageContent } from "@langchain/core/messages";
 import { ChatOllama } from "@langchain/ollama";
 import { useState } from "react";
+import { handleThinkTag } from "~/utils/handleThinkTag";
 import { parseDag, type DAG } from "~/utils/parseDag";
 
 const llm = new ChatOllama({
@@ -13,9 +14,11 @@ const abortController = new AbortController();
 export function useLllm({
   prompt,
   setSubquestions,
+  setUpdatedQuestion,
 }: {
   prompt: string;
   setSubquestions?: React.Dispatch<React.SetStateAction<DAG | undefined>>;
+  setUpdatedQuestion?: any;
 }) {
   const [result, setResult] = useState<MessageContent>();
   const [loading, setLoading] = useState(false);
@@ -37,6 +40,10 @@ export function useLllm({
 
       if (setSubquestions) {
         setSubquestions(parseDag(result as string));
+      }
+
+      if (setUpdatedQuestion) {
+        setUpdatedQuestion(handleThinkTag(result as string).result);
       }
     } catch (error) {
       setError(true);

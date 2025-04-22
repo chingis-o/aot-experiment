@@ -5,16 +5,7 @@ import {
   AccordionTrigger,
 } from "@radix-ui/react-accordion";
 import React from "react";
-
-function handleThinkTag(text: string) {
-  const matchBetweenTags = text.match(/<think>(.*?)<\/think>/i);
-  const matchAfterTags = text.match(/<\/think>(.*)/i);
-
-  return {
-    thinking: matchBetweenTags ? matchBetweenTags[1] : "",
-    result: matchAfterTags ? matchAfterTags[1] : "",
-  };
-}
+import { handleThinkTag } from "~/utils/handleThinkTag";
 
 export default function Result({ result }: { result: string }) {
   return (
