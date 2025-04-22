@@ -89,7 +89,7 @@ export default function GenerateResponse({ question }: { question: string }) {
     // }, [result]);
 
     return (
-      <div>
+      <div className="my-3 w-full">
         <div>{subquestion}</div>
         <Button
           className="my-2 cursor-pointer px-7 py-1"
@@ -99,6 +99,8 @@ export default function GenerateResponse({ question }: { question: string }) {
           Solve
         </Button>
         {error ? "Error occurred" : ""}
+        <Result result={String(result)} />
+        <Contract />
         {result && (
           <div className="my-4 w-full rounded-md border-2 border-blue-500 px-3 py-2">
             {String(result)}
@@ -113,9 +115,9 @@ export default function GenerateResponse({ question }: { question: string }) {
     updatedQuestion,
     setUpdatedQuestion,
   }: {
-    subquestion: string;
-    updatedQuestion: string;
-    setUpdatedQuestion: any;
+    subquestion?: string;
+    updatedQuestion?: string;
+    setUpdatedQuestion?: any;
   }) {
     const { generate, result, loading, error, abort } = useLllm({
       prompt: contract1(updatedQuestion, subquestion),
@@ -138,6 +140,8 @@ export default function GenerateResponse({ question }: { question: string }) {
           Contract
         </Button>
         {error ? "Error occurred" : ""}
+        <div>Contract!!!</div>
+        <Result result={String(result)} />
         {result && (
           <div className="my-4 w-full rounded-md border-2 border-blue-500 px-3 py-2">
             {String(result)}
@@ -155,6 +159,39 @@ export default function GenerateResponse({ question }: { question: string }) {
       thinking: matchBetweenTags ? matchBetweenTags[1] : "",
       result: matchAfterTags ? matchAfterTags[1] : "",
     };
+  }
+
+  function Result({ result }: { result: string }) {
+    return (
+      <>
+        <Accordion
+          type="single"
+          className="my-2 w-full"
+          collapsible
+          defaultValue="item-1"
+        >
+          <AccordionItem value="item-1">
+            <AccordionTrigger className="mb-1.5 bg-[#f7f8fc] px-2.5 py-2 font-medium">
+              Thinking completed
+            </AccordionTrigger>
+            <AccordionContent className="p-1.5 text-[#8f91a8]">
+              {
+                handleThinkTag(
+                  "<think>Tought process</think> Hello! How can I assist you today? 😊",
+                ).thinking
+              }
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+        <div>
+          {
+            handleThinkTag(
+              "<think>Tought process</think> Hello! How can I assist you today? 😊",
+            ).result
+          }
+        </div>
+      </>
+    );
   }
 
   return (
@@ -198,32 +235,19 @@ export default function GenerateResponse({ question }: { question: string }) {
           </AccordionItem>
         </Accordion>
       )}
-      <Accordion
-        type="single"
-        className="my-2 w-full"
-        collapsible
-        defaultValue="item-1"
-      >
-        <AccordionItem value="item-1">
-          <AccordionTrigger className="mb-1.5 bg-[#f7f8fc] px-2.5 py-2 font-medium">
-            Thinking completed
-          </AccordionTrigger>
-          <AccordionContent className="p-1.5 text-[#8f91a8]">
-            {
-              handleThinkTag(
-                "<think>Tought process</think> Hello! How can I assist you today? 😊",
-              ).thinking
-            }
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-      <div>
-        {
-          handleThinkTag(
-            "<think>Tought process</think> Hello! How can I assist you today? 😊",
-          ).result
-        }
-      </div>
+      <Result result="<think>Tought process</think> Hello! How can I assist you today? 😊" />
+      {[{ description: "A" }, { description: "B" }, { description: "C" }].map(
+        (subquestions: any) => {
+          return (
+            <Subquestion
+              key={subquestions.description}
+              updatedQuestion={updatedQuestion}
+              setUpdatedQuestion={setUpdatedQuestion}
+              subquestion={subquestions.description}
+            />
+          );
+        },
+      )}
       {Array.isArray(subquestions?.nodes) ? (
         <ul>
           {subquestions.nodes.map((subquestions: any) => {
