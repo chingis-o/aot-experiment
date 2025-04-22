@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
 import { useLllm } from "~/hooks/llm.hook";
@@ -8,66 +8,20 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { type DAG } from "@/utils/parseDag";
 
 import prompts from "../prompts/examples";
 
-type Subquestion = {
-  description: string;
-  answer?: string;
-  depend: number[]; // Indices of dependent subquestions
-};
-
-type DAG = {
-  nodes: Subquestion[];
-  edges: [number, number][]; // Dependency edges between subquestions
-};
+const { label, solve, contract1 } = prompts;
 
 export default function GenerateResponse({ question }: { question: string }) {
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState(label(question));
   const [updatedQuestion, setUpdatedQuestion] = useState(question);
   const [subquestions, setSubquestions] = useState<DAG>();
   const { generate, result, loading, error, abort } = useLllm({
     prompt,
+    setSubquestions,
   });
-  const { label, solve, contract1 } = prompts;
-
-  useEffect(() => {
-    setPrompt(label(question));
-  }, [question]);
-
-  useEffect(() => {
-    if (result) {
-      setSubquestions(parse(result as string));
-    }
-  }, [result]);
-
-  function parse(plainText: string): DAG | undefined {
-    const jsonBlockRegex = /``` json\s*({[\s\S]*?})\s* ```/;
-    const jsonMatch = plainText.match(jsonBlockRegex);
-
-    if (!jsonMatch) {
-      return undefined;
-    }
-
-    const jsonContent = jsonMatch[1];
-
-    function formatSubquestions(input: any): Subquestion[] {
-      return input[" sub Questions "].map((value: any) => {
-        return {
-          description: value[" description "].trim(),
-          depend: value[" depend "],
-        };
-      });
-    }
-
-    const subquestions = formatSubquestions(JSON.parse(jsonContent ?? ""));
-
-    const edges: [number, number][] = subquestions.flatMap((node, index) =>
-      node.depend.map((depIndex) => [depIndex, index] as [number, number]),
-    );
-
-    return { nodes: subquestions, edges };
-  }
 
   function Subquestion({
     subquestion,
@@ -81,12 +35,6 @@ export default function GenerateResponse({ question }: { question: string }) {
     const { generate, result, loading, error, abort } = useLllm({
       prompt: solve(updatedQuestion, subquestion),
     });
-
-    // useEffect(() => {
-    //   if (!loading && result) {
-    //     setUpdatedQuestion(result);
-    //   }
-    // }, [result]);
 
     return (
       <div className="my-3 w-full">
@@ -122,12 +70,6 @@ export default function GenerateResponse({ question }: { question: string }) {
     const { generate, result, loading, error, abort } = useLllm({
       prompt: contract1(updatedQuestion, subquestion),
     });
-
-    useEffect(() => {
-      if (!loading && result) {
-        setUpdatedQuestion(result);
-      }
-    }, [result]);
 
     return (
       <div>
@@ -175,21 +117,11 @@ export default function GenerateResponse({ question }: { question: string }) {
               Thinking completed
             </AccordionTrigger>
             <AccordionContent className="p-1.5 text-[#8f91a8]">
-              {
-                handleThinkTag(
-                  "<think>Tought process</think> Hello! How can I assist you today? 😊",
-                ).thinking
-              }
+              {handleThinkTag(result).thinking}
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-        <div>
-          {
-            handleThinkTag(
-              "<think>Tought process</think> Hello! How can I assist you today? 😊",
-            ).result
-          }
-        </div>
+        <div>{handleThinkTag(result).result}</div>
       </>
     );
   }
