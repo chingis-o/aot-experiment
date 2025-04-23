@@ -3,7 +3,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@radix-ui/react-accordion";
+} from "@/components/ui/accordion";
 import React from "react";
 import { handleThinkTag } from "~/utils/handleThinkTag";
 
