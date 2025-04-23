@@ -38,22 +38,26 @@ export default function Cascade({
     }
 
     return (
-      <div className="my-4 grid grid-cols-[20px_1fr] text-xs">
-        <div className="ml-1 w-[3px] bg-slate-200"></div>
-        <div className="">
-          <h3 className="font-semibold">Subquestion</h3>
-          <div className="mt-2">{question}</div>
-          <Result result="<think>Tought process</think> Here subquestion answer" />
-          <h3 className="mt-3 font-semibold">Contracted</h3>
-          <Result result="<think>Tought process</think> Contracted question" />
+      <>
+        <div className="grid grid-cols-[20px_1fr] text-sm">
+          <div className="relative ml-1.5 w-[1px] translate-y-2 bg-slate-200">
+            <div className="absolute top-0 right-1/2 h-1.5 w-1.5 translate-x-1/2 rounded-full bg-slate-200" />
+          </div>
+          <div className="pb-3">
+            <h3 className="font-semibold">Subquestion</h3>
+            <div className="mt-2">{question}</div>
+            <Result result="<think>Tought process</think> Here subquestion answer" />
+            <h4 className="mt-3 font-medium">Contracted</h4>
+            <Result result="<think>Tought process</think> Contracted question" />
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <div className="my-3">
-      <Button onClick={handleClick}>Init cascade of AoT</Button>
+      {/* <Button onClick={handleClick} >Init cascade of AoT</Button> */}
       {[{ description: "A" }, { description: "B" }, { description: "C" }].map(
         (subquestions: any) => {
           return (
