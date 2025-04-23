@@ -38,16 +38,16 @@ export default function Cascade({
     }
 
     return (
-      <>
-        <div className="my-3 w-full">
-          <h3 className="mt-3 font-semibold">Subquestion</h3>
+      <div className="my-4 grid grid-cols-[20px_1fr] text-xs">
+        <div className="ml-1 w-[3px] bg-slate-200"></div>
+        <div className="">
+          <h3 className="font-semibold">Subquestion</h3>
           <div className="mt-2">{question}</div>
           <Result result="<think>Tought process</think> Here subquestion answer" />
           <h3 className="mt-3 font-semibold">Contracted</h3>
           <Result result="<think>Tought process</think> Contracted question" />
         </div>
-        <hr />
-      </>
+      </div>
     );
   }
 
