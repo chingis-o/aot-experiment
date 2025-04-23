@@ -41,20 +41,24 @@ export default function GenerateResponse({ question }: { question: string }) {
         onChange={(event) => setPrompt(event.target.value)}
         value={prompt}
       />
-      <Button
-        className="my-2 cursor-pointer px-7 py-1"
-        disabled={loading}
-        onClick={handleClick}
-      >
-        Generate
-      </Button>
-      <Button
-        className="my-2 cursor-pointer px-7 py-1"
-        onClick={() => abort()}
-        type="reset"
-      >
-        Cancel
-      </Button>
+      <div className="flex w-full justify-end">
+        {loading ? (
+          <Button
+            className="my-2 cursor-pointer px-7 py-1"
+            onClick={() => abort()}
+            type="reset"
+          >
+            Cancel
+          </Button>
+        ) : (
+          <Button
+            className="my-2 cursor-pointer px-7 py-1"
+            onClick={handleClick}
+          >
+            Generate
+          </Button>
+        )}
+      </div>
       {error ? "Error occurred" : ""}
       {result && (
         <Accordion type="single" collapsible>
