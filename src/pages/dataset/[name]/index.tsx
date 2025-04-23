@@ -36,17 +36,9 @@ export default function DatasetPage() {
         <meta name="description" content="AoT app" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="my-10 flex justify-center">
-        <div className="container w-10/12">
-          <ul className="flex list-none flex-col gap-2">
-            {router.query.name === "gsm8k" ? (
-              <List data={data} />
-            ) : (
-              "Not available"
-            )}
-          </ul>
-        </div>
-      </main>
+      <ul className="flex list-none flex-col gap-2">
+        {router.query.name === "gsm8k" ? <List data={data} /> : "Not available"}
+      </ul>
     </>
   );
 }

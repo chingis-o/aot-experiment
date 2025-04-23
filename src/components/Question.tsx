@@ -11,7 +11,7 @@ export default function Question({ data }: { data: any }) {
   return (
     <>
       <div className="grid grid-cols-[1fr_auto]">
-        <li className="mr-3 flex gap-2.5">{`1 ) ${data && data?.question}`}</li>
+        <li className="mr-3 flex gap-2.5">{`${data.idx + 1} ) ${data && data?.question}`}</li>
         <Prompt prompt={prompt} setPrompt={setPrompt} />
       </div>
       <hr />

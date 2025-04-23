@@ -1,9 +1,7 @@
 import React from "react";
 import Head from "next/head";
-import { Button } from "@/components/ui/button";
 import Question from "~/components/Question";
 import { useRouter } from "next/router";
-import Link from "next/link";
 
 import gsm8k from "@/data/gsm8k/test.json";
 
@@ -34,20 +32,9 @@ export default function ProblemPage() {
         <meta name="description" content="AoT app" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="my-10 flex min-h-screen flex-col items-center">
-        <div className="container grid max-w-2/3 justify-start">
-          <ul className="my-5 flex justify-start gap-2.5">
-            <li>
-              <Button className="cursor-pointer">
-                <Link href={`/dataset/gsm8k`}>gsm8k</Link>
-              </Button>
-            </li>
-          </ul>
-          <ul className="my-5 grid gap-2.5">
-            <Question data={data[Number(id)]} />
-          </ul>
-        </div>
-      </main>
+      <ul className="my-5 grid gap-2.5">
+        <Question data={data[Number(id)]} />
+      </ul>
     </>
   );
 }
