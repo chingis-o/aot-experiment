@@ -42,7 +42,7 @@ export default function DatasetPage() {
             {router.query.name === "gsm8k" ? (
               <List data={data} />
             ) : (
-              "No available"
+              "Not available"
             )}
           </ul>
         </div>

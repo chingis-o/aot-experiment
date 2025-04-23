@@ -15,7 +15,7 @@ export default function Question({ data }: { data: any }) {
         <Prompt prompt={prompt} setPrompt={setPrompt} />
       </div>
       <hr />
-      <li>{`Correct answer: ${data && data?.answer}`}</li>
+      <li className="text-sm text-gray-700">{`Correct answer: ${data && data?.answer}`}</li>
       <hr />
       <GenerateResponse question={data?.question} prompt={prompt} />
     </>
