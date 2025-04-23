@@ -4,6 +4,7 @@ import QuestionBlock from "./QuestionBlock";
 import type { DAG, Subquestion } from "~/utils/parseDag";
 import { Button } from "./ui/button";
 import { handleThinkTag } from "~/utils/handleThinkTag";
+import Result from "./Result";
 
 import prompts from "../prompts/examples";
 
@@ -12,9 +13,11 @@ const { solve, contract1 } = prompts;
 export default function Cascade({
   question,
   subquestions,
+  handleClick,
 }: {
   question: string;
   subquestions: DAG | undefined;
+  handleClick: any;
 }) {
   const [updatedQuestion, setUpdatedQuestion] = useState(question);
 
@@ -35,61 +38,21 @@ export default function Cascade({
     }
 
     return (
-      <div className="my-3 w-full">
-        <QuestionBlock
-          question={subquestion}
-          loading={loading}
-          generate={handleClick}
-          abort={abort}
-          error={error}
-          result={result}
-        />
-        <Contract />
-      </div>
+      <>
+        <div className="my-3 w-full">
+          <h3 className="mt-3 font-semibold">Subquestion</h3>
+          <div className="mt-2">{question}</div>
+          <Result result="<think>Tought process</think> Here subquestion answer" />
+          <h3 className="mt-3 font-semibold">Contracted</h3>
+          <Result result="<think>Tought process</think> Contracted question" />
+        </div>
+        <hr />
+      </>
     );
-  }
-
-  function Contract({
-    subquestion,
-    updatedQuestion,
-    setUpdatedQuestion,
-  }: {
-    subquestion?: string;
-    updatedQuestion?: string;
-    setUpdatedQuestion?: any;
-  }) {
-    const { generate, result, loading, error, abort } = useLllm();
-
-    return (
-      <div>
-        <QuestionBlock
-          question={subquestion ?? ""}
-          loading={loading}
-          generate={async () =>
-            await generate(contract1(updatedQuestion, subquestion))
-          }
-          abort={abort}
-          error={error}
-          result={result}
-        />
-      </div>
-    );
-  }
-
-  const { generate, result, loading, error, abort } = useLllm();
-
-  function a() {
-    return;
-  }
-
-  function handleClick() {
-    if (!subquestions) return [];
-
-    return subquestions.nodes.map((subquestions: Subquestion) => {});
   }
 
   return (
-    <>
+    <div className="my-3">
       <Button onClick={handleClick}>Init cascade of AoT</Button>
       {[{ description: "A" }, { description: "B" }, { description: "C" }].map(
         (subquestions: any) => {
@@ -117,6 +80,6 @@ export default function Cascade({
           })}
         </ul>
       ) : null}
-    </>
+    </div>
   );
 }

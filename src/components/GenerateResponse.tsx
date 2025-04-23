@@ -14,17 +14,24 @@ import { parseDag, type DAG } from "@/utils/parseDag";
 
 import prompts from "../prompts/examples";
 
-const { label } = prompts;
+const { label, solve, contract1 } = prompts;
 
 export default function GenerateResponse({ question }: { question: string }) {
   const [prompt, setPrompt] = useState(label(question));
   const [subquestions, setSubquestions] = useState<DAG>();
   const { generate, result, loading, error, abort } = useLllm();
 
+  // chain algorithm
+  const [chain, setChain] = useState([
+    { subquestion: "", result: "", contracted: "" },
+  ]);
+
   async function handleClick() {
     const result = await generate(prompt);
     setSubquestions(parseDag(result as string));
   }
+
+  async function handleChain() {}
 
   return (
     <div className="container grid justify-items-start">
@@ -58,7 +65,11 @@ export default function GenerateResponse({ question }: { question: string }) {
         </Accordion>
       )}
       <Result result="<think>Tought process</think> Hello! How can I assist you today? 😊" />
-      <Cascade question={question} subquestions={subquestions} />
+      <Cascade
+        question={question}
+        subquestions={subquestions}
+        handleClick={handleChain}
+      />
     </div>
   );
 }
