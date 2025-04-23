@@ -1,10 +1,9 @@
 import Head from "next/head";
-import { Button } from "@/components/ui/button";
-import Question from "~/components/Question";
-
-import gsm8k from "../data/gsm8k/test.json";
+import Link from "next/link";
 
 export default function Home() {
+  const datasets = ["bbh", "gsm8k", "hotpotqa", "longbench", "math", "mmlu"];
+
   return (
     <>
       <Head>
@@ -12,15 +11,17 @@ export default function Home() {
         <meta name="description" content="AoT app" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="my-10 flex min-h-screen flex-col items-center">
-        <div className="container grid max-w-2/3 justify-start">
-          <ul className="my-5 flex justify-start gap-2.5">
-            <li>
-              <Button className="cursor-pointer">gsm8k</Button>
-            </li>
-          </ul>
-          <ul className="my-5 grid gap-2.5">
-            <Question data={gsm8k[0]} />
+      <main className="my-10 flex justify-center">
+        <div className="container w-10/12">
+          <h1 className="mb-6">Select a dataset</h1>
+          <ul className="flex flex-col gap-0.5">
+            {datasets.map((value) => {
+              return (
+                <li key={value} className="text-xl">
+                  <Link href={`/dataset/${value}`}>{value}</Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </main>
