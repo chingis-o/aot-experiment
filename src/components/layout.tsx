@@ -19,7 +19,6 @@ export default function Layout({ children }: { children: JSX.Element }) {
     return query;
   }
 
-  const id = handleRouterQuery(router.query.id);
   const name = handleRouterQuery(router.query.name);
 
   return (
@@ -29,12 +28,14 @@ export default function Layout({ children }: { children: JSX.Element }) {
           {datasets.map((value) => {
             return (
               <li key={value}>
-                <Button
-                  className="cursor-pointer"
-                  variant={name === value ? "default" : "outline"}
-                >
-                  <Link href={`/dataset/${value}`}>{value}</Link>
-                </Button>
+                <Link href={`/dataset/${value}`}>
+                  <Button
+                    className="cursor-pointer"
+                    variant={name === value ? "default" : "outline"}
+                  >
+                    {value}
+                  </Button>
+                </Link>
               </li>
             );
           })}

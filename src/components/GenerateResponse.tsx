@@ -9,7 +9,12 @@ import {
 } from "@/components/ui/accordion";
 import Result from "./Result";
 import Cascade from "./Cascade";
-import { parseDag, type DAG } from "@/utils/parseDag";
+import { parseDag } from "@/utils/parseDag";
+import type { Chain } from "~/interfaces/chain";
+
+import prompts from "../prompts/examples";
+
+const { solve, contract1 } = prompts;
 
 export default function GenerateResponse({
   question,
@@ -18,20 +23,35 @@ export default function GenerateResponse({
   question: string;
   prompt: string;
 }) {
-  const [subquestions, setSubquestions] = useState<DAG>();
   const { generate, result, loading, error, abort } = useLllm();
 
-  // chain algorithm
-  const [chain, setChain] = useState([
-    { subquestion: "", result: "", contracted: "" },
+  const [chain, setChain] = useState<Chain[]>([
+    {
+      subquestion: "Janet’s ducks lay 16 eggs per day. ",
+      result:
+        "<think>Tought process</think> Hello! How can I assist you today? 😊",
+      contracted: "contracted question",
+    },
   ]);
 
   async function handleClick() {
     const result = await generate(prompt);
-    setSubquestions(parseDag(result as string));
+    const dag = parseDag(result as string);
+    if (dag?.nodes) {
+      const subquestions = dag.nodes.map((value) => {
+        return {
+          subquestion: value.description,
+          result: "",
+          contracted: "",
+        };
+      });
+      setChain(subquestions);
+      const solved = await generate(
+        solve("updatedQuestion", chain[0]?.subquestion ?? ""),
+      );
+      const constract = await generate(contract1("updatedQuestion"));
+    }
   }
-
-  async function handleChain() {}
 
   return (
     <div className="container grid justify-items-start">
@@ -54,11 +74,7 @@ export default function GenerateResponse({
         </Accordion>
       )}
       <Result result="<think>Tought process</think> Hello! How can I assist you today? 😊" />
-      <Cascade
-        question={question}
-        subquestions={subquestions}
-        handleClick={handleChain}
-      />
+      <Cascade chain={chain} />
     </div>
   );
 }
