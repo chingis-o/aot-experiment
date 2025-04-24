@@ -14,7 +14,7 @@ import type { Chain } from "~/interfaces/chain";
 
 import prompts from "../prompts/examples";
 
-const { solve, contract1 } = prompts;
+const { label, solve, contract1 } = prompts;
 
 export default function GenerateResponse({
   question,
@@ -35,8 +35,10 @@ export default function GenerateResponse({
   ]);
 
   async function handleClick() {
-    const result = await generate(prompt);
+    await generate(prompt);
+    console.log(result);
     const dag = parseDag(result as string);
+
     if (dag?.nodes) {
       const subquestions = dag.nodes.map((value) => {
         return {
@@ -46,10 +48,37 @@ export default function GenerateResponse({
         };
       });
       setChain(subquestions);
-      const solved = await generate(
-        solve("updatedQuestion", chain[0]?.subquestion ?? ""),
-      );
-      const constract = await generate(contract1("updatedQuestion"));
+      console.log(chain);
+
+      await generate(solve(prompt, chain[0]?.subquestion ?? ""));
+      setChain((prev) => [
+        {
+          ...(prev[0] ?? {
+            subquestion: "",
+            result: "",
+            contracted: "",
+          }),
+          result: String(result),
+        },
+        ...prev.slice(1, prev.length),
+      ]);
+
+      console.log(chain);
+
+      await generate(contract1("updatedQuestion"));
+      setChain((prev) => [
+        {
+          ...(prev[0] ?? {
+            subquestion: "",
+            result: "",
+            contracted: "",
+          }),
+          contracted: String(result),
+        },
+        ...prev.slice(1, prev.length),
+      ]);
+
+      console.log(chain);
     }
   }
 
@@ -65,15 +94,7 @@ export default function GenerateResponse({
         )}
       </div>
       {error ? "Error occurred" : ""}
-      {result && (
-        <Accordion type="single" collapsible>
-          <AccordionItem value="item-1">
-            <AccordionTrigger>Is it accessible?</AccordionTrigger>
-            <AccordionContent>{String(result)}</AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      )}
-      <Result result="<think>Tought process</think> Hello! How can I assist you today? 😊" />
+      {result && <Result result={String(result)} loading={loading} />}
       <Cascade chain={chain} />
     </div>
   );

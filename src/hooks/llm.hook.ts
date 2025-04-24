@@ -1,8 +1,6 @@
 import type { MessageContent } from "@langchain/core/messages";
 import { ChatOllama } from "@langchain/ollama";
 import { useState } from "react";
-import { handleThinkTag } from "~/utils/handleThinkTag";
-import { parseDag, type DAG } from "~/utils/parseDag";
 
 const llm = new ChatOllama({
   model: "deepseek-r1:7b",
@@ -29,8 +27,6 @@ export function useLllm() {
       for await (const chunk of stream) {
         setResult((prev) => `${prev}${chunk.content}`);
       }
-
-      return result;
     } catch (error) {
       setError(true);
       console.log(error);
