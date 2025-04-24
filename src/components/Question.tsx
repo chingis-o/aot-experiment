@@ -17,7 +17,7 @@ export default function Question({ data }: { data: any }) {
       <hr />
       <li className="text-sm text-gray-700">{`Correct answer: ${data && data?.answer}`}</li>
       <hr />
-      <GenerateResponse question={data?.question} prompt={prompt} />
+      <GenerateResponse prompt={prompt} />
     </>
   );
 }

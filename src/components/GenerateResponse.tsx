@@ -1,12 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { useLllm } from "~/hooks/llm.hook";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import Result from "./Result";
 import Cascade from "./Cascade";
 import { parseDag } from "@/utils/parseDag";
@@ -14,15 +8,9 @@ import type { Chain } from "~/interfaces/chain";
 
 import prompts from "../prompts/examples";
 
-const { label, solve, contract1 } = prompts;
+const { solve, contract1 } = prompts;
 
-export default function GenerateResponse({
-  question,
-  prompt,
-}: {
-  question: string;
-  prompt: string;
-}) {
+export default function GenerateResponse({ prompt }: { prompt: string }) {
   const { generate, result, loading, error, abort } = useLllm();
 
   const [chain, setChain] = useState<Chain[]>([
