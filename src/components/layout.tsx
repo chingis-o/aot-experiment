@@ -49,7 +49,7 @@ export default function Layout({ children }: { children: JSX.Element }) {
           })}
         </menu>
       </aside>
-      <div className="grid max-h-screen items-start justify-start overflow-y-scroll rounded-md bg-white p-10">
+      <div className="grid max-h-screen items-start overflow-y-scroll rounded-md bg-white p-10">
         {children}
       </div>
     </main>

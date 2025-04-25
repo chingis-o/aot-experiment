@@ -40,7 +40,7 @@ export default function Result({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-      <div className="overflow-x-scroll w-full">
+      <div className="overflow-y-auto w-full">
         <Markdown>{result.trim()}</Markdown>
       </div>
     </>
