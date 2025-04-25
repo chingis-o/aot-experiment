@@ -39,7 +39,7 @@ export default function Result({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-      <div className="whitespace-pre-line">{result}</div>
+      <div className="whitespace-pre-line">{result.trim()}</div>
     </>
   );
 }
