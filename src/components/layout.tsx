@@ -22,16 +22,24 @@ export default function Layout({ children }: { children: JSX.Element }) {
   const name = handleRouterQuery(router.query.name);
 
   return (
-    <main className="my-10 flex min-h-screen flex-col items-center">
-      <div className="container grid max-w-2/3 justify-start">
-        <ul className="my-5 flex justify-start gap-2.5">
+    <main className="grid min-h-screen grid-cols-[250px_1fr] bg-[#f7f8fc]">
+      <aside className="flex flex-col pl-6">
+        <div className="grid place-items-center pt-4">
+          <Link
+            href="/"
+            className="text-primary-foreground text-xl font-bold tracking-wider select-none"
+          >
+            Atom of Thoughts
+          </Link>
+        </div>
+        <menu className="mt-5 flex flex-col gap-2">
           {datasets.map((value) => {
             return (
-              <li key={value}>
+              <li key={value} className="text-xl">
                 <Link href={`/dataset/${value}`}>
                   <Button
                     className="cursor-pointer"
-                    variant={name === value ? "default" : "outline"}
+                    variant={name === value ? "default" : "secondary"}
                   >
                     {value}
                   </Button>
@@ -39,7 +47,9 @@ export default function Layout({ children }: { children: JSX.Element }) {
               </li>
             );
           })}
-        </ul>
+        </menu>
+      </aside>
+      <div className="grid max-h-screen justify-start overflow-y-scroll rounded-md bg-white p-10">
         {children}
       </div>
     </main>
