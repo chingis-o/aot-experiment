@@ -5,6 +5,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import React from "react";
+import Markdown from "react-markdown";
 
 export default function Result({
   result: text,
@@ -35,11 +36,13 @@ export default function Result({
             {loading ? "Thinking process..." : "Thinking completed"}
           </AccordionTrigger>
           <AccordionContent className="p-1.5 whitespace-pre-line text-[#8f91a8]">
-            {thinking}
+            {thinking.trim()}
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-      <div className="whitespace-pre-line">{result.trim()}</div>
+      <div className="overflow-x-scroll w-full">
+        <Markdown>{result.trim()}</Markdown>
+      </div>
     </>
   );
 }

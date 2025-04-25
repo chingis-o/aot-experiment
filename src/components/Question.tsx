@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import GenerateResponse from "./GenerateResponse";
 import prompts from "../prompts/examples";
 import Prompt from "./Prompt";
+import Markdown from "react-markdown";
 
 const { label } = prompts;
 
@@ -15,7 +16,9 @@ export default function Question({ data }: { data: any }) {
         <Prompt prompt={prompt} setPrompt={setPrompt} />
       </div>
       <hr />
-      <li className="text-sm text-gray-700">{`Correct answer: ${data && data?.answer}`}</li>
+      <li className="text-sm text-gray-700">
+        <Markdown>{`Correct answer: ${data && data?.answer}`}</Markdown>
+      </li>
       <hr />
       <GenerateResponse prompt={prompt} />
     </>
