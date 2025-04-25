@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
 import { useLllm } from "~/hooks/llm.hook";
 import Result from "./Result";
 import Cascade from "./Cascade";
 import { parseDag } from "@/utils/parseDag";
 import type { Chain } from "~/interfaces/chain";
+import autoAnimate from "@formkit/auto-animate";
 
 import prompts from "../prompts/examples";
 
@@ -12,6 +13,11 @@ const { solve, contract1 } = prompts;
 
 export default function GenerateResponse({ prompt }: { prompt: string }) {
   const { generate, result, loading, error, abort } = useLllm();
+  const parent = useRef(null);
+
+  useEffect(() => {
+    parent.current && autoAnimate(parent.current);
+  }, [parent]);
 
   const [chain, setChain] = useState<Chain[]>([
     {
@@ -71,7 +77,7 @@ export default function GenerateResponse({ prompt }: { prompt: string }) {
   }
 
   return (
-    <div className="container grid justify-items-start">
+    <div className="container grid justify-items-start" ref={parent}>
       <div className="my-2 flex w-full justify-end py-1">
         {loading ? (
           <Button onClick={() => abort()} type="reset">
@@ -83,7 +89,7 @@ export default function GenerateResponse({ prompt }: { prompt: string }) {
       </div>
       {error ? "Error occurred" : ""}
       {result && <Result result={String(result)} loading={loading} />}
-      <Cascade chain={chain} />
+      {/* <Cascade chain={chain} /> */}
     </div>
   );
 }
