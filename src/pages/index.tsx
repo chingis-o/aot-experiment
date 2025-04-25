@@ -1,8 +1,14 @@
 import Head from "next/head";
-import Link from "next/link";
-import { datasets } from "~/constants/datasets";
+import { useRouter } from "next/router";
+import { useEffect } from "react";
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.push("dataset/gsm8k");
+  }, []);
+
   return (
     <>
       <Head>
@@ -10,16 +16,7 @@ export default function Home() {
         <meta name="description" content="AoT app" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <h1 className="mb-6">Select a dataset</h1>
-      <ul className="flex flex-col gap-0.5">
-        {datasets.map((value) => {
-          return (
-            <li key={value} className="text-xl">
-              <Link href={`/dataset/${value}`}>{value}</Link>
-            </li>
-          );
-        })}
-      </ul>
+      <></>
     </>
   );
 }
