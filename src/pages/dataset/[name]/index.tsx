@@ -162,11 +162,6 @@ function List<T extends Dataset>({
     currentPage * itemsPerPage,
   );
 
-  console.log("currentPage");
-  console.log(currentPage);
-
-  console.log(paginatedData);
-
   return (
     <>
       <ul>
@@ -182,8 +177,6 @@ function List<T extends Dataset>({
           );
         })}
       </ul>
-
-      {/* Pagination Controls */}
       <PaginationControls
         currentPage={currentPage}
         totalPages={totalPages}
