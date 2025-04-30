@@ -16,8 +16,8 @@ export default function Cascade({ chain }: { chain: Chain[] }) {
                 <h3 className="font-semibold">Subquestion</h3>
                 <div className="mt-2">{chain.subquestion}</div>
                 <Result result={chain.result} loading={false} />
-                <h4 className="mt-3 font-medium">Contracted</h4>
-                <Result result={chain.contracted} loading={false} />
+                {/* <h4 className="mt-3 font-medium">Contracted</h4>
+                <Result result={chain.contracted} loading={false} /> */}
               </div>
             </div>
           );

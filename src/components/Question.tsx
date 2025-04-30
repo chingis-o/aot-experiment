@@ -74,7 +74,7 @@ export default function Question({ data }: QuestionProps) {
       <hr />
       <li className="text-sm text-gray-700">{getAnswerComponent(data)}</li>
       <hr />
-      <GenerateResponse prompt={prompt} />
+      <GenerateResponse prompt={prompt} question={getQuestionText(data)} />
     </>
   );
 }
