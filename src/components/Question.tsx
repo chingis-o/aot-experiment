@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import GenerateResponse from "./GenerateResponse";
-import prompts from "../prompts/examples";
+import { label } from "../prompts/examples";
 import Prompt from "./Prompt";
 import {
   type QuestionData,
@@ -8,8 +8,6 @@ import {
   getAnswerText,
   getIndex,
 } from "@/types/question";
-
-const { label } = prompts;
 
 interface QuestionProps {
   data: QuestionData;
@@ -74,7 +72,7 @@ export default function Question({ data }: QuestionProps) {
       <hr />
       <li className="text-sm text-gray-700">{getAnswerComponent(data)}</li>
       <hr />
-      <GenerateResponse prompt={prompt} question={getQuestionText(data)} />
+      <GenerateResponse question={getQuestionText(data)} />
     </>
   );
 }

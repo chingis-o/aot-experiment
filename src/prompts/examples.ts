@@ -121,14 +121,4 @@ function ensemble(question?: string, solutions?: string) {
     You can freely reason in your response, but please enclose the final answer within <answer></answer> tags (pure number without units and explanations)`;
 }
 
-const prompt = {
-  direct,
-  multistep,
-  label,
-  contract,
-  ensemble,
-  solve,
-  contract1,
-};
-
-export default prompt;
+export { direct, multistep, label, contract, ensemble, solve, contract1 };

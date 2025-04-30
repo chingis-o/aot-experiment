@@ -1,6 +1,8 @@
-import type { MessageContent } from "@langchain/core/messages";
 import { ChatOllama } from "@langchain/ollama";
 import { useRef, useState } from "react";
+import type { Chain } from "~/interfaces/chain";
+import { parseDag } from "~/utils/parseDag";
+import { solve, label } from "@/prompts/examples";
 
 const llm = new ChatOllama({
   model: "deepseek-r1:7b",
@@ -8,28 +10,74 @@ const llm = new ChatOllama({
 });
 
 export function useLllm() {
-  const [result, setResult] = useState<MessageContent>("");
+  const [decomposed, setDecomposed] = useState("");
+  const [chain, setChain] = useState<Chain[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const abortController = useRef(new AbortController());
 
-  async function generate(prompt: string) {
+  async function generate(question: string) {
     setLoading(true);
     setError(false);
-    setResult("");
-    let fullResult = "";
+    setDecomposed("");
+    setChain([]);
 
     try {
-      const stream = await llm.stream(prompt, {
+      const stream = await llm.stream(label(question), {
         signal: abortController.current.signal,
       });
 
+      let result = "";
+
       for await (const chunk of stream) {
-        fullResult += chunk.content;
-        setResult((prev) => `${prev}${chunk.content}`);
+        result = `${result}${chunk.content}`;
+        setDecomposed(result);
       }
 
-      return fullResult;
+      const dag = parseDag(result as string);
+
+      if (!dag?.nodes || dag.nodes.length === 0) {
+        console.warn("No nodes found in DAG");
+        return setLoading(false);
+      }
+
+      const subquestions = dag.nodes.map((node) => node.description);
+
+      console.log(subquestions);
+
+      for (let i = 0; i < subquestions.length; i++) {
+        console.log(chain);
+
+        const solutionStream = await llm.stream(
+          solve(question, subquestions[i] ?? ""),
+          {
+            signal: abortController.current.signal,
+          },
+        );
+
+        let solved = "";
+
+        setChain((prev) => [
+          ...prev,
+          {
+            subquestion: subquestions[i] ?? "",
+            result: solved,
+            contracted: "",
+          },
+        ]);
+
+        for await (const chunk of solutionStream) {
+          solved = `${solved}${chunk.content}`;
+          setChain((prev) =>
+            prev.map((item, index) => {
+              return index === i
+                ? { ...item, result: solved, loading: true }
+                : item;
+            }),
+          );
+        }
+      }
     } catch (error) {
       setError(true);
       console.log(error);
@@ -44,5 +92,5 @@ export function useLllm() {
     abortController.current = new AbortController();
   }
 
-  return { generate, result, loading, error, abort };
+  return { generate, decomposed, loading, error, abort, chain };
 }

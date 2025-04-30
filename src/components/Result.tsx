@@ -8,10 +8,10 @@ import React from "react";
 import Markdown from "react-markdown";
 
 export default function Result({
-  result: text,
+  answer: text,
   loading,
 }: {
-  result: string;
+  answer: string;
   loading: boolean;
 }) {
   const splitPosition =
@@ -40,7 +40,7 @@ export default function Result({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-      <div className="overflow-y-auto w-full">
+      <div className="w-full overflow-y-auto">
         <Markdown>{result.trim()}</Markdown>
       </div>
     </>
