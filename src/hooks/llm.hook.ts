@@ -44,11 +44,7 @@ export function useLllm() {
 
       const subquestions = dag.nodes.map((node) => node.description);
 
-      console.log(subquestions);
-
       for (let i = 0; i < subquestions.length; i++) {
-        console.log(chain);
-
         const solutionStream = await llm.stream(
           solve(question, subquestions[i] ?? ""),
           {
