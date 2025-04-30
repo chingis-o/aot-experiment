@@ -51,3 +51,16 @@ export interface Mmlu {
   D: string;
   Answer: "A" | "B" | "C" | "D";
 }
+
+type DatasetMap = {
+  gsm8k: Gsm8k;
+  bbh: Bbh;
+  hotpotqa: Hotpotqa;
+  longbench: Longbench;
+  math: Math;
+  mmlu: Mmlu;
+};
+
+type DatasetName = keyof DatasetMap;
+
+export type { DatasetMap, DatasetName };

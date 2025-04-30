@@ -1,23 +1,59 @@
-import React from "react";
-import Head from "next/head";
-import Question from "~/components/Question";
 import { useRouter } from "next/router";
-import { handleRouterQuery } from "~/utils/handleRouterQuery";
+import { useEffect, useState } from "react";
+import Head from "next/head";
+import Question from "@/components/Question";
+import { isValidDatasetName } from "@/utils/validateDatasetName";
+import { handleRouterQuery } from "@/utils/handleRouterQuery";
+import { loadDataset } from "@/utils/loadDataset";
 
-import gsm8k from "@/data/gsm8k/test.json";
-import bbh from "@/data/bbh/test.json";
-import hotpotqa from "@/data/hotpotqa/test.json";
-import longbench from "@/data/longbench/test.json";
-import math from "@/data/math/test.json";
-import mmlu from "@/data/mmlu/test.json";
-
-import type { Gsm8k } from "@/interfaces/datasets";
-
-export default function ProblemPage() {
+export default function QuestionPage() {
   const router = useRouter();
-  const data: Gsm8k[] = Array.from(gsm8k);
-
+  const name = handleRouterQuery(router.query.name);
   const id = handleRouterQuery(router.query.id);
+
+  const [item, setItem] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!isValidDatasetName(name)) {
+        console.error("Invalid dataset name:", name);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await loadDataset(name); // T[] where T is Gsm8k, Bbh, etc.
+        const index = parseInt(id, 10);
+
+        if (isNaN(index) || index < 0 || index >= data.length) {
+          console.error("Invalid question index:", id);
+          setLoading(false);
+          return;
+        }
+
+        setItem(data[index]);
+      } catch (err) {
+        console.error("Failed to load dataset:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [name, id]);
+
+  if (!isValidDatasetName(name)) {
+    return <div>Dataset not found</div>;
+  }
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!item) {
+    return <div>Question not found</div>;
+  }
 
   return (
     <>
@@ -27,7 +63,7 @@ export default function ProblemPage() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <ul className="my-5 grid gap-2.5">
-        <Question data={data[Number(id)]} />
+        <Question data={item} />
       </ul>
     </>
   );
