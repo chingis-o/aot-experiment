@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import GenerateResponse from "./GenerateResponse";
 import prompts from "../prompts/examples";
 import Prompt from "./Prompt";
-import Markdown from "react-markdown";
 import {
   type QuestionData,
   getQuestionText,
