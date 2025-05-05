@@ -1,6 +1,8 @@
 AoT-Experiment: Atom of Thoughts for Markov LLM Test-Time Scaling
 =================================================================
 
+![AOT Process](/public/screenshots/page.png "Example page")
+
 This project is an experiment in implementing the **Atom of Thoughts (AOT)** framework within a [T3](https://create.t3.gg/) Next.js application to explore **Markov-style reasoning** and **Test-Time Scaling** for Large Language Models (LLMs). The goal is to break down complex reasoning into atomic steps while leveraging efficient computation during inference.
 
 * * * * *
