@@ -10,9 +10,7 @@ This project is an experiment in implementing the **Atom of Thoughts (AOT)** fra
 
 The **Atom of Thoughts (Aot)**
 
-(<https://huggingface.com/blog/aot> )(<https://www.zhihu.com/p/687504222> )(<https://zhuanlan.zhihu.com/p/691052786> )
-
-(<https://zhuanlan.zhihu.com/p/692677238> ) is a novel reasoning framework that transforms complex reasoning tasks into a sequence of atomic questions, modeled as a **Markov process** . It introduces a two-phase mechanism:
+Paper: <https://arxiv.org/abs/2502.12018>
 
 1.  **Decomposition** : Breaking down the problem into smaller sub-problems.
 2.  **Merging** : Combining results from each atomic step into a coherent final output.
