@@ -40,5 +40,4 @@ Additionally, it models dependencies between sub-tasks using a **Directed Acycli
 -   [Tailwind CSS](https://tailwindcss.com/)
 -   [tRPC](https://trpc.io/)
 -   [Zod](https://zod.dev/) for schema validation
--   [React Flow](https://reactflow.dev/) for visualizing DAGs
--   Optional: Integration with HuggingFace or OpenAI APIs for LLM inference
+-   [LangGraph](https://www.langchain.com/langgraph)
